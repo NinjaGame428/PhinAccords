@@ -77,20 +77,46 @@ const SongList = () => {
               }
               return true;
             })
-            .map((song: any) => ({
-              id: song.id,
-              title: song.title,
-              artist: song.artists?.name || song.artist || 'Unknown Artist',
-              key: song.key_signature || 'C',
-              difficulty: 'Medium',
-              category: song.genre || 'Gospel',
-              slug: song.slug || song.id,
-            }));
+            .map((song: any) => {
+              // Extract artist name from various possible structures
+              let artistName = 'Unknown Artist';
+              
+              if (song.artists) {
+                // Handle different artist object structures
+                if (typeof song.artists === 'string') {
+                  artistName = song.artists;
+                } else if (song.artists.name) {
+                  artistName = song.artists.name;
+                } else if (Array.isArray(song.artists) && song.artists.length > 0) {
+                  artistName = song.artists[0]?.name || 'Unknown Artist';
+                }
+              } else if (song.artist) {
+                artistName = typeof song.artist === 'string' ? song.artist : song.artist.name || 'Unknown Artist';
+              }
+              
+              return {
+                id: song.id,
+                title: song.title,
+                artist: artistName,
+                key: song.key_signature || 'C',
+                difficulty: 'Medium',
+                category: song.genre || song.category || 'Gospel',
+                slug: song.slug || song.id,
+              };
+            });
 
           console.log(`✅ Loaded ${formattedSongs.length} songs for home page`, {
-            sample: formattedSongs[0]
+            total: formattedSongs.length,
+            sample: formattedSongs[0],
+            songsWithArtist: formattedSongs.filter(s => s.artist !== 'Unknown Artist').length
           });
-          setPopularSongs(formattedSongs);
+          
+          if (formattedSongs.length > 0) {
+            setPopularSongs(formattedSongs);
+          } else {
+            console.warn('⚠️ All songs were filtered out');
+            setPopularSongs([]);
+          }
         } else {
           console.warn('⚠️ No songs in API response:', data);
           setPopularSongs([]);

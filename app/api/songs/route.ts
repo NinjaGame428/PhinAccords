@@ -92,16 +92,24 @@ export async function GET(request: NextRequest) {
           }
 
           // Use artist data if available, otherwise use the artist text field
+          // Always provide a fallback artist structure so songs aren't filtered out
           const finalArtist = artistData || (song.artist ? {
             id: song.artist_id || null,
             name: song.artist,
             bio: null,
             image_url: null
-          } : null);
+          } : {
+            id: null,
+            name: 'Unknown Artist',
+            bio: null,
+            image_url: null
+          });
 
           return {
             ...song,
-            artists: finalArtist
+            artists: finalArtist,
+            // Also include artist as a string field for backward compatibility
+            artist: finalArtist.name
           };
         })
       );
