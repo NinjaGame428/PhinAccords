@@ -37,7 +37,7 @@ const SongsPage = () => {
     async function fetchSongs() {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/songs?limit=24');
+        const response = await fetch('/api/songs?limit=1000');
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -257,8 +257,6 @@ const SongsPage = () => {
                   // Navigate to the selected song using ID (fastest and most reliable)
                   window.location.href = getTranslatedRoute(`/songs/${result.id}`, language);
                 }}
-                showFilters={false}
-                showSort={false}
               />
             </div>
 

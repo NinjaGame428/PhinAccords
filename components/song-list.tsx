@@ -3,11 +3,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Music, User, ExternalLink } from "lucide-react";
+import { Music, User, ExternalLink, Grid3X3, List, Heart, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getTranslatedRoute } from "@/lib/url-translations";
+import { ViewToggle } from "@/components/view-toggle";
 
 interface Song {
   id: string | number;
@@ -17,12 +18,14 @@ interface Song {
   difficulty: string;
   category: string;
   slug?: string;
+  year?: string | number;
 }
 
 const SongList = () => {
   const { t, language } = useLanguage();
   const [popularSongs, setPopularSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Fetch 12 songs from API
   useEffect(() => {
@@ -102,6 +105,7 @@ const SongList = () => {
                 difficulty: 'Medium',
                 category: song.genre || song.category || 'Gospel',
                 slug: song.slug || song.id,
+                year: song.year || new Date(song.created_at || Date.now()).getFullYear(),
               };
             });
 
@@ -168,52 +172,142 @@ const SongList = () => {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {popularSongs.map((song) => {
-        const songSlug = song.slug || song.id;
-        const songUrl = getTranslatedRoute(`/songs/${songSlug}`, language);
+    <div className="w-full">
+      {/* Header with count and view toggle */}
+      <div className="flex justify-between items-center mb-6 px-2">
+        <div className="text-sm text-muted-foreground">
+          {popularSongs.length} {t('songs.songsFound')}
+        </div>
+        <ViewToggle currentView={viewMode} onViewChange={setViewMode} />
+      </div>
 
-        return (
-          <Card key={song.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="text-lg mb-2 line-clamp-2">
-                    {song.title}
-                  </CardTitle>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <User className="h-4 w-4" />
-                    <span className="line-clamp-1">{song.artist}</span>
+      {/* Grid View */}
+      {viewMode === 'grid' ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {popularSongs.map((song) => {
+            const songSlug = song.slug || song.id;
+            const songUrl = getTranslatedRoute(`/songs/${songSlug}`, language);
+
+            return (
+              <Card key={song.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-base font-semibold mb-2 line-clamp-2 leading-tight">
+                        {song.title}
+                      </CardTitle>
+                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1">
+                        <User className="h-4 w-4 flex-shrink-0" />
+                        <span className="line-clamp-1">{song.artist}</span>
+                      </div>
+                      {song.year && (
+                        <div className="text-xs text-muted-foreground mb-2">
+                          {song.year}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-1 ml-2 flex-shrink-0">
+                      <Badge variant="outline" className="text-xs h-5 px-1.5">
+                        {song.key}
+                      </Badge>
+                      <Heart className="h-4 w-4 text-muted-foreground mt-1" />
+                    </div>
                   </div>
-                </div>
-                <Music className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-2" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="flex gap-2 flex-wrap">
-                  <Badge variant="outline" className="text-xs">
-                    {song.key}
-                  </Badge>
-                  <Badge
-                    className={`text-xs ${getDifficultyColor(song.difficulty)}`}
-                  >
-                    {song.difficulty}
-                  </Badge>
-                  <Badge variant="secondary" className="text-xs">
-                    {song.category}
-                  </Badge>
-                </div>
-                <Link href={songUrl}>
-                  <Button variant="ghost" size="sm" className="h-8">
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-2 flex-wrap">
+                      <Badge
+                        className={`text-xs ${getDifficultyColor(song.difficulty)}`}
+                      >
+                        {song.difficulty}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {song.category}
+                      </Badge>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      asChild
+                      className="h-8 text-xs"
+                    >
+                      <Link href={songUrl}>
+                        <BookOpen className="h-3 w-3 mr-1.5" />
+                        {t('song.viewChords')}
+                        <ExternalLink className="h-3 w-3 ml-1.5" />
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        /* List View */
+        <div className="space-y-3">
+          {popularSongs.map((song) => {
+            const songSlug = song.slug || song.id;
+            const songUrl = getTranslatedRoute(`/songs/${songSlug}`, language);
+
+            return (
+              <Card key={song.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start gap-3 mb-2">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-base mb-1 line-clamp-1">
+                            {song.title}
+                          </h3>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <User className="h-3.5 w-3.5" />
+                            <span>{song.artist}</span>
+                            {song.year && (
+                              <>
+                                <span>•</span>
+                                <span>{song.year}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 flex-wrap mt-2">
+                        <Badge variant="outline" className="text-xs">
+                          {song.key}
+                        </Badge>
+                        <Badge
+                          className={`text-xs ${getDifficultyColor(song.difficulty)}`}
+                        >
+                          {song.difficulty}
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {song.category}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        asChild
+                        className="h-8"
+                      >
+                        <Link href={songUrl}>
+                          <BookOpen className="h-4 w-4 mr-2" />
+                          {t('song.viewChords')}
+                          <ExternalLink className="h-4 w-4 ml-2" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
