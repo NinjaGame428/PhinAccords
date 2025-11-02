@@ -701,8 +701,8 @@ const PianoChordDiagram = ({
         {/* Scales-Chords API Piano Chord Image */}
         <div 
           ref={chordImageRef} 
-          className="mb-2 flex justify-center items-center min-h-[200px]"
-          style={{ minHeight: '200px' }}
+          className="mb-2 flex justify-center items-center min-h-[30px]"
+          style={{ minHeight: '30px' }}
         >
           {!apiReady && (
             <div className="text-sm text-muted-foreground">Loading chord diagram...</div>
