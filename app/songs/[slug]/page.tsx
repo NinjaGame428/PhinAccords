@@ -14,6 +14,13 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getTranslatedRoute } from '@/lib/url-translations';
 import { PianoChordTooltip } from '@/components/ui/piano-chord-tooltip';
 import '@/components/ui/rich-text-editor.css';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const SongDetailsPage = () => {
   const params = useParams();
@@ -28,11 +35,114 @@ const SongDetailsPage = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedChord, setSelectedChord] = useState<{ name: string; position: { x: number; y: number } } | null>(null);
+  const [transposeKey, setTransposeKey] = useState<string | null>(null);
+  const [transposedLyrics, setTransposedLyrics] = useState<string | null>(null);
 
   // Helper function to create slug from title
   const createSlug = (title: string) => {
     return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   };
+
+  // Chord transposition logic
+  const getSemitoneIndex = (key: string): number => {
+    const keyMap: { [key: string]: number } = {
+      'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
+      'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8,
+      'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11
+    };
+    // Remove any modifiers like 'm' for minor
+    const cleanKey = key.replace(/m$/, '').trim();
+    return keyMap[cleanKey] ?? 0;
+  };
+
+  const getKeyFromIndex = (index: number, preferSharp: boolean = true): string => {
+    const keysSharp = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const keysFlat = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+    return preferSharp ? keysSharp[index % 12] : keysFlat[index % 12];
+  };
+
+  const transposeChord = (chordName: string, semitones: number): string => {
+    // Extract root note and suffix
+    const chordMatch = chordName.match(/^([A-G][#b]?)(.*)$/);
+    if (!chordMatch) return chordName;
+    
+    const rootNote = chordMatch[1];
+    const suffix = chordMatch[2];
+    
+    // Get current index
+    const currentIndex = getSemitoneIndex(rootNote);
+    if (currentIndex === undefined) return chordName;
+    
+    // Calculate new index
+    const newIndex = (currentIndex + semitones + 12) % 12;
+    
+    // Determine if we should use sharp or flat based on original
+    const preferSharp = rootNote.includes('#');
+    const preferFlat = rootNote.includes('b');
+    
+    // Get new root note
+    let newRoot: string;
+    if (preferFlat) {
+      newRoot = getKeyFromIndex(newIndex, false);
+    } else {
+      newRoot = getKeyFromIndex(newIndex, true);
+    }
+    
+    return newRoot + suffix;
+  };
+
+  const transposeChordsInLyrics = (targetKey: string) => {
+    if (!song || !song.lyrics) return;
+    
+    const originalKey = song.key_signature || 'C';
+    const originalIndex = getSemitoneIndex(originalKey);
+    const targetIndex = getSemitoneIndex(targetKey);
+    const semitones = targetIndex - originalIndex;
+    
+    if (semitones === 0) {
+      setTransposedLyrics(null);
+      return;
+    }
+    
+    // Create a temporary DOM element to parse HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = song.lyrics;
+    
+    // Find all chord spans
+    const chordElements = tempDiv.querySelectorAll('.chord');
+    chordElements.forEach((element) => {
+      const chordText = element.textContent || '';
+      // Extract chord name from [Chord] format
+      const chordName = chordText.replace(/\[|\]/g, '').trim();
+      
+      if (chordName) {
+        const transposedChord = transposeChord(chordName, semitones);
+        element.textContent = `[${transposedChord}]`;
+        // Update any data attributes if needed
+        if (element instanceof HTMLElement) {
+          element.setAttribute('data-original-chord', chordName);
+        }
+      }
+    });
+    
+    // Also find chord patterns in text (e.g., standalone chord names)
+    const textContent = tempDiv.textContent || '';
+    const chordPattern = /\[([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|7|9|11|13)?(?:\/[A-G][#b]?)?)\]/gi;
+    const transposedHtml = tempDiv.innerHTML.replace(chordPattern, (match, chordName) => {
+      const transposed = transposeChord(chordName, semitones);
+      return `[${transposed}]`;
+    });
+    
+    setTransposedLyrics(transposedHtml);
+  };
+
+  // Reset transpose when song changes
+  useEffect(() => {
+    if (song) {
+      setTransposeKey(null);
+      setTransposedLyrics(null);
+    }
+  }, [song?.id]);
 
   const fetchSong = async (showRefreshIndicator = false) => {
     try {
@@ -440,17 +550,50 @@ const SongDetailsPage = () => {
               {/* Lyrics & Chords */}
               <Card className="w-full">
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center">
+                  <div className="flex items-center justify-between mb-2">
+                    <CardTitle className="flex items-center">
                       <Guitar className="h-5 w-5 mr-2" />
                       {t('songDetail.lyrics')} & {t('songDetail.chords')}
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      {song.key_signature && (
+                        <Badge variant="outline" className="text-sm">
+                          {t('songDetail.key')}: {transposeKey || song.key_signature}
+                        </Badge>
+                      )}
+                      <Select
+                        value={transposeKey || song.key_signature || 'C'}
+                        onValueChange={(newKey) => {
+                          setTransposeKey(newKey);
+                          transposeChordsInLyrics(newKey);
+                        }}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={song.key_signature || 'C'}>Original</SelectItem>
+                          <SelectItem value="C">C</SelectItem>
+                          <SelectItem value="C#">C#</SelectItem>
+                          <SelectItem value="Db">Db</SelectItem>
+                          <SelectItem value="D">D</SelectItem>
+                          <SelectItem value="D#">D#</SelectItem>
+                          <SelectItem value="Eb">Eb</SelectItem>
+                          <SelectItem value="E">E</SelectItem>
+                          <SelectItem value="F">F</SelectItem>
+                          <SelectItem value="F#">F#</SelectItem>
+                          <SelectItem value="Gb">Gb</SelectItem>
+                          <SelectItem value="G">G</SelectItem>
+                          <SelectItem value="G#">G#</SelectItem>
+                          <SelectItem value="Ab">Ab</SelectItem>
+                          <SelectItem value="A">A</SelectItem>
+                          <SelectItem value="A#">A#</SelectItem>
+                          <SelectItem value="Bb">Bb</SelectItem>
+                          <SelectItem value="B">B</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    {song.key_signature && (
-                      <Badge variant="outline" className="text-sm">
-                        {t('songDetail.key')}: {song.key_signature}
-                      </Badge>
-                    )}
-                  </CardTitle>
+                  </div>
                   <CardDescription>
                     {t('songDetail.followAlong')}
                   </CardDescription>
@@ -462,7 +605,7 @@ const SongDetailsPage = () => {
                       <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700 w-full">
                         <div 
                           className="font-mono text-base leading-loose whitespace-pre-wrap prose prose-sm max-w-none w-full"
-                          dangerouslySetInnerHTML={{ __html: song.lyrics }}
+                          dangerouslySetInnerHTML={{ __html: transposedLyrics || song.lyrics }}
                           onClick={(e) => {
                             // Handle chord clicks from HTML content
                             const target = e.target as HTMLElement;
