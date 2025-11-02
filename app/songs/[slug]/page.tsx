@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getTranslatedRoute } from '@/lib/url-translations';
 import { PianoChordTooltip } from '@/components/ui/piano-chord-tooltip';
+import '@/components/ui/rich-text-editor.css';
 
 const SongDetailsPage = () => {
   const params = useParams();
