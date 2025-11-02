@@ -110,7 +110,7 @@ const SongDetailsPage = () => {
     // Pattern to match chord spans: <span class="chord" ...>[ChordName]</span>
     const chordSpanPattern = /<span\s+class="chord"[^>]*>\[([^\]]+)\]<\/span>/gi;
     
-    transposedHtml = transposedHtml.replace(chordSpanPattern, (match, chordName) => {
+    transposedHtml = transposedHtml.replace(chordSpanPattern, (match: string, chordName: string) => {
       const transposed = transposeChord(chordName.trim(), semitones);
       // Preserve the original span attributes
       return match.replace(/\[([^\]]+)\]/, `[${transposed}]`);
@@ -118,7 +118,7 @@ const SongDetailsPage = () => {
     
     // Also handle any standalone chord patterns in brackets
     const standaloneChordPattern = /\[([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|7|9|11|13)?(?:\/[A-G][#b]?)?)\]/gi;
-    transposedHtml = transposedHtml.replace(standaloneChordPattern, (match, chordName) => {
+    transposedHtml = transposedHtml.replace(standaloneChordPattern, (match: string, chordName: string) => {
       // Only replace if not already inside a chord span
       if (!match.includes('class="chord"')) {
         const transposed = transposeChord(chordName, semitones);
