@@ -31,32 +31,69 @@ const SongList = () => {
 
       try {
         setIsLoading(true);
-        const response = await fetch('/api/songs?limit=12');
+        const response = await fetch('/api/songs?limit=12', {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
         
         if (!response.ok) {
-          console.error('❌ Error fetching songs');
+          const errorText = await response.text();
+          console.error('❌ Error fetching songs:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorText
+          });
           setIsLoading(false);
+          setPopularSongs([]);
           return;
         }
 
         const data = await response.json();
         const songsData = data.songs || [];
+        
+        console.log('📊 Raw API response:', {
+          hasData: !!data,
+          hasSongs: !!data.songs,
+          songsCount: songsData.length,
+          firstSong: songsData[0]
+        });
+
+        console.log('📊 Home page API response:', {
+          totalSongs: songsData.length,
+          sampleSong: songsData[0],
+          pagination: data.pagination
+        });
 
         if (songsData && songsData.length > 0) {
           const formattedSongs: Song[] = songsData
-            .filter((song: any) => song.artists?.name || song.artist)
+            .filter((song: any) => {
+              // Only filter out songs that are completely invalid (no title)
+              if (!song || !song.title) {
+                console.warn('⚠️ Skipping song without title:', song);
+                return false;
+              }
+              return true;
+            })
             .map((song: any) => ({
               id: song.id,
               title: song.title,
-              artist: song.artists?.name || song.artist || 'Unknown',
+              artist: song.artists?.name || song.artist || 'Unknown Artist',
               key: song.key_signature || 'C',
               difficulty: 'Medium',
               category: song.genre || 'Gospel',
               slug: song.slug || song.id,
             }));
 
-          console.log(`✅ Loaded ${formattedSongs.length} songs for home page`);
+          console.log(`✅ Loaded ${formattedSongs.length} songs for home page`, {
+            sample: formattedSongs[0]
+          });
           setPopularSongs(formattedSongs);
+        } else {
+          console.warn('⚠️ No songs in API response:', data);
+          setPopularSongs([]);
         }
       } catch (error) {
         console.error('❌ Error fetching songs:', error);
