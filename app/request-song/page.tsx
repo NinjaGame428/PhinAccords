@@ -36,11 +36,33 @@ const RequestSongPage = () => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsSubmitted(true);
-    setIsSubmitting(false);
+    try {
+      const response = await fetch('/api/song-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: formData.songTitle,
+          artist: formData.artist,
+          genre: formData.genre,
+          message: formData.description,
+          // userId will be set server-side if user is authenticated
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to submit request');
+      }
+
+      setIsSubmitted(true);
+    } catch (error: any) {
+      console.error('Error submitting song request:', error);
+      alert(error.message || 'Failed to submit request. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const genres = [

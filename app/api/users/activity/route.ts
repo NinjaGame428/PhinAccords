@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const serverClient = createServerClient();
 
     let query = serverClient
-      .from('user_activity')
+      .from('user_activities')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(50);
@@ -53,12 +53,14 @@ export async function POST(request: NextRequest) {
 
     const serverClient = createServerClient();
     const { data: activity, error } = await serverClient
-      .from('user_activity')
+      .from('user_activities')
       .insert({
         user_id: userId,
         activity_type: activityType,
         description: description || null,
-        activity_data: metadata || null,
+        metadata: metadata || null,
+        page: page || null,
+        action: action || null,
         created_at: new Date().toISOString()
       })
       .select()

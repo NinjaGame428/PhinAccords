@@ -28,12 +28,16 @@ const ResourcesPage = () => {
       setIsLoading(true);
 
       try {
-        // TODO: Create /api/resources endpoint
-        // For now, return empty array
-        setResources([]);
-        console.log('⚠️ Resources API endpoint not yet implemented');
+        const response = await fetch('/api/resources?limit=1000');
+        if (!response.ok) {
+          throw new Error('Failed to fetch resources');
+        }
+        const data = await response.json();
+        console.log('✅ Fetched resources:', data.resources?.length || 0);
+        setResources(data.resources || []);
       } catch (error) {
-        console.error('❌ Error:', error);
+        console.error('❌ Error fetching resources:', error);
+        setResources([]);
       } finally {
         setIsLoading(false);
       }
