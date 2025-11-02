@@ -34,12 +34,15 @@ const SongList = () => {
 
       try {
         setIsLoading(true);
-        const response = await fetch('/api/songs?limit=12', {
+        // Add timestamp to ensure fresh data
+        const timestamp = Date.now();
+        const response = await fetch(`/api/songs?limit=12&_t=${timestamp}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache'
-          }
+          },
+          next: { revalidate: 0 }
         });
         
         if (!response.ok) {
@@ -122,22 +125,43 @@ const SongList = () => {
                 id: song.id,
                 title: song.title,
                 artist: artistName,
-                key: song.key_signature || 'C',
-                difficulty: 'Medium',
+                key: song.key_signature || song.key || 'C',
+                difficulty: song.difficulty || 'Medium',
                 category: song.genre || song.category || 'Gospel',
                 slug: song.slug || song.id,
-                year: song.year || new Date(song.created_at || Date.now()).getFullYear(),
+                year: song.year || (song.created_at ? new Date(song.created_at).getFullYear() : new Date().getFullYear()),
+                // Include updated_at for tracking changes
+                updated_at: song.updated_at,
               };
             });
 
           console.log(`✅ Loaded ${formattedSongs.length} songs for home page`, {
             total: formattedSongs.length,
             sample: formattedSongs[0],
-            songsWithArtist: formattedSongs.filter(s => s.artist !== 'Unknown Artist').length
+            songsWithArtist: formattedSongs.filter(s => s.artist !== 'Unknown Artist').length,
+            lastUpdated: formattedSongs[0]?.updated_at
           });
           
           if (formattedSongs.length > 0) {
-            setPopularSongs(formattedSongs);
+            // Only update state if songs actually changed (prevents unnecessary re-renders)
+            setPopularSongs(prevSongs => {
+              const hasChanged = prevSongs.length !== formattedSongs.length ||
+                prevSongs.some((prevSong, index) => {
+                  const newSong = formattedSongs[index];
+                  return !newSong || 
+                    prevSong.id !== newSong.id ||
+                    prevSong.title !== newSong.title ||
+                    prevSong.artist !== newSong.artist ||
+                    prevSong.key !== newSong.key ||
+                    (prevSong.updated_at !== newSong.updated_at);
+                });
+              
+              if (hasChanged) {
+                console.log('🔄 Songs updated - refreshing display');
+                return formattedSongs;
+              }
+              return prevSongs;
+            });
           } else {
             console.warn('⚠️ All songs were filtered out');
             setPopularSongs([]);
@@ -154,7 +178,27 @@ const SongList = () => {
     }
 
     fetchSongs();
-  }, []);
+    
+    // Set up periodic refresh to check for updates (every 30 seconds when page is visible)
+    const refreshInterval = setInterval(() => {
+      // Only refresh if page is visible
+      if (!document.hidden) {
+        fetchSongs();
+      }
+    }, 30000); // 30 seconds
+    
+    // Also listen for focus events to refresh when user returns to the page
+    const handleFocus = () => {
+      fetchSongs();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      clearInterval(refreshInterval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [language]); // Re-fetch if language changes, []);
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {

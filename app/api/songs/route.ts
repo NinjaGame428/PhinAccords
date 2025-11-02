@@ -36,9 +36,11 @@ export async function GET(request: NextRequest) {
       }
 
       // First try: Simple select (works even if artist_id foreign key doesn't exist)
+      // Order by updated_at first to show most recently updated songs, then by created_at
       const { data: songs, error: songsError } = await serverClient
         .from('songs')
         .select('*')
+        .order('updated_at', { ascending: false })
         .order('created_at', { ascending: false })
         .range(offset, offset + maxLimit - 1);
 
