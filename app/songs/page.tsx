@@ -124,7 +124,7 @@ const SongsPage = () => {
                 language: 'en',
                 captions_available: false
               };
-            }));
+            });
 
           setSupabaseSongs(formattedSongs);
         }
