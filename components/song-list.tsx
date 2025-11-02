@@ -198,7 +198,7 @@ const SongList = () => {
       clearInterval(refreshInterval);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [language]); // Re-fetch if language changes, []);
+  }, [language]); // Re-fetch if language changes
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
