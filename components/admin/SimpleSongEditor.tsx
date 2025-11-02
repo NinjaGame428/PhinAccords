@@ -234,14 +234,9 @@ export const SimpleSongEditor: React.FC<SimpleSongEditorProps> = ({ songSlug, so
   };
 
   const handleSave = async () => {
-    // Validate required fields
+    // Validate required fields - only title is required
     if (!songData.title || !songData.title.trim()) {
       showNotification('Title is required', 'error');
-      return;
-    }
-
-    if (!songData.artist_id) {
-      showNotification('Please select an artist', 'error');
       return;
     }
 
@@ -704,7 +699,7 @@ export const SimpleSongEditor: React.FC<SimpleSongEditorProps> = ({ songSlug, so
 
             {/* Artist */}
             <div>
-              <Label htmlFor="artist">Artist *</Label>
+              <Label htmlFor="artist">Artist</Label>
               {songData.artist_id && songData.artist_name && (
                 <p className="text-xs text-muted-foreground mb-2">
                   Selected: <span className="font-medium">{songData.artist_name}</span>
@@ -781,9 +776,6 @@ export const SimpleSongEditor: React.FC<SimpleSongEditorProps> = ({ songSlug, so
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
-              {!songData.artist_id && (
-                <p className="text-xs text-destructive mt-1">Please select an artist from the dropdown</p>
-              )}
             </div>
 
             {/* Key & Tempo */}
