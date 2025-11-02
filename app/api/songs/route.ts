@@ -13,80 +13,37 @@ export async function GET(request: NextRequest) {
     const serverClient = createServerClient();
     
     try {
-      // First, try to get total count
+      // Get total count
       const { count, error: countError } = await serverClient
         .from('songs')
         .select('*', { count: 'exact', head: true });
 
-      // If table doesn't exist or RLS blocks access, return empty
       if (countError) {
-        console.error('Error getting song count:', countError);
+        console.error('❌ Error getting song count:', countError);
         // Check if it's a "relation does not exist" error
         if (countError.message?.includes('does not exist') || countError.code === '42P01') {
-          console.warn('Songs table does not exist yet. Please deploy the database schema.');
           return NextResponse.json({ 
             songs: [], 
-            pagination: {
-              page,
-              limit: maxLimit,
-              total: 0,
-              totalPages: 0
-            },
+            pagination: { page, limit: maxLimit, total: 0, totalPages: 0 },
             message: 'Database schema not deployed. Please run the SQL migration files in Supabase.'
           });
         }
-        // For RLS errors, return empty but with count 0
+        // For RLS errors or other issues, return empty
         return NextResponse.json({ 
           songs: [], 
-          pagination: {
-            page,
-            limit: maxLimit,
-            total: 0,
-            totalPages: 0
-          }
+          pagination: { page, limit: maxLimit, total: 0, totalPages: 0 }
         });
       }
 
-      // Fetch songs - try with artist relation first, fallback to simple select
-      let songs: any[] = [];
-      let error: any = null;
-
-      // Try with artist relation
-      const songsWithArtists = await serverClient
+      // First try: Simple select (works even if artist_id foreign key doesn't exist)
+      const { data: songs, error: songsError } = await serverClient
         .from('songs')
-        .select(`
-          *,
-          artists:artist_id (
-            id,
-            name,
-            bio,
-            image_url
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .range(offset, offset + maxLimit - 1);
 
-      if (songsWithArtists.error) {
-        // If relation fails (RLS or no foreign key), try simple select
-        console.warn('Artist relation failed, trying simple select:', songsWithArtists.error);
-        const simpleSelect = await serverClient
-          .from('songs')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .range(offset, offset + maxLimit - 1);
-        
-        if (simpleSelect.error) {
-          error = simpleSelect.error;
-        } else {
-          songs = simpleSelect.data || [];
-        }
-      } else {
-        songs = songsWithArtists.data || [];
-      }
-
-      if (error) {
-        console.error('Error fetching songs:', error);
-        // Don't fail completely - return empty array
+      if (songsError) {
+        console.error('❌ Error fetching songs:', songsError);
         return NextResponse.json({ 
           songs: [], 
           pagination: {
@@ -98,27 +55,58 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      // Process songs to handle null artist_ids
-      const processedSongs = songs.map((song: any) => {
-        const artist = Array.isArray(song.artists) ? song.artists[0] : song.artists;
-        
-        if (!artist && song.artist) {
+      if (!songs || songs.length === 0) {
+        console.log('ℹ️ No songs found in database');
+        return NextResponse.json({ 
+          songs: [], 
+          pagination: {
+            page,
+            limit: maxLimit,
+            total: count || 0,
+            totalPages: Math.ceil((count || 0) / maxLimit)
+          }
+        });
+      }
+
+      // Process songs and try to fetch artist info if artist_id exists
+      const processedSongs = await Promise.all(
+        songs.map(async (song: any) => {
+          let artistData = null;
+
+          // If song has artist_id, try to fetch artist details
+          if (song.artist_id) {
+            try {
+              const { data: artist } = await serverClient
+                .from('artists')
+                .select('id, name, bio, image_url')
+                .eq('id', song.artist_id)
+                .single();
+              
+              if (artist) {
+                artistData = artist;
+              }
+            } catch (error) {
+              // Artist not found or RLS issue - use fallback
+              console.warn(`Artist not found for ID ${song.artist_id}`);
+            }
+          }
+
+          // Use artist data if available, otherwise use the artist text field
+          const finalArtist = artistData || (song.artist ? {
+            id: song.artist_id || null,
+            name: song.artist,
+            bio: null,
+            image_url: null
+          } : null);
+
           return {
             ...song,
-            artists: {
-              id: song.artist_id || null,
-              name: song.artist,
-              bio: null,
-              image_url: null
-            }
+            artists: finalArtist
           };
-        }
-        
-        return {
-          ...song,
-          artists: artist || null
-        };
-      });
+        })
+      );
+
+      console.log(`✅ Successfully fetched ${processedSongs.length} songs`);
 
       const response = NextResponse.json({ 
         songs: processedSongs, 
@@ -136,32 +124,22 @@ export async function GET(request: NextRequest) {
       
       return response;
     } catch (dbError: any) {
-      console.error('Database error in GET /api/songs:', dbError);
+      console.error('❌ Database error in GET /api/songs:', dbError);
       return NextResponse.json({ 
         songs: [],
-        pagination: {
-          page,
-          limit: maxLimit,
-          total: 0,
-          totalPages: 0
-        },
+        pagination: { page, limit: maxLimit, total: 0, totalPages: 0 },
         error: 'Database connection failed',
         details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
-      }, { status: 200 }); // Return 200 with empty array instead of 500
+      }, { status: 200 });
     }
   } catch (error: any) {
-    console.error('Error in GET /api/songs:', error);
+    console.error('❌ Error in GET /api/songs:', error);
     return NextResponse.json({ 
       songs: [],
-      pagination: {
-        page: 1,
-        limit: 50,
-        total: 0,
-        totalPages: 0
-      },
+      pagination: { page: 1, limit: 50, total: 0, totalPages: 0 },
       error: 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    }, { status: 200 }); // Return 200 with empty array
+    }, { status: 200 });
   }
 }
 
@@ -225,15 +203,7 @@ export async function POST(request: NextRequest) {
         rating: 0,
         downloads: 0
       })
-      .select(`
-        *,
-        artists:artist_id (
-          id,
-          name,
-          bio,
-          image_url
-        )
-      `)
+      .select('*')
       .single();
 
     if (error || !songData) {
@@ -244,16 +214,31 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
+    // Try to fetch artist info if available
+    let artistInfo = null;
+    if (songData.artist_id) {
+      try {
+        const { data: artist } = await serverClient
+          .from('artists')
+          .select('id, name, bio, image_url')
+          .eq('id', songData.artist_id)
+          .single();
+        
+        if (artist) artistInfo = artist;
+      } catch (error) {
+        // Ignore artist fetch errors
+      }
+    }
+
     // Process artist data
     const processedSong = {
       ...songData,
-      artists: Array.isArray(songData.artists) ? songData.artists[0] : songData.artists || 
-        (songData.artist ? {
-          id: songData.artist_id || null,
-          name: songData.artist,
-          bio: null,
-          image_url: null
-        } : null)
+      artists: artistInfo || (songData.artist ? {
+        id: songData.artist_id || null,
+        name: songData.artist,
+        bio: null,
+        image_url: null
+      } : null)
     };
 
     const response = NextResponse.json({ song: processedSong }, { status: 201 });

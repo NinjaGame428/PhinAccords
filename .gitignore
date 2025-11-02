@@ -50,6 +50,5 @@ Thumbs.db
 logs
 *.log
 
-# Neon
-neon-config.json
+# Database
 .psql_history

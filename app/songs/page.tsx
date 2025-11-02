@@ -40,7 +40,12 @@ const SongsPage = () => {
         const response = await fetch('/api/songs?limit=24');
         
         if (!response.ok) {
-          console.error('❌ Error fetching songs');
+          const errorData = await response.json().catch(() => ({}));
+          console.error('❌ Error fetching songs:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData
+          });
           setIsLoading(false);
           return;
         }
@@ -48,13 +53,38 @@ const SongsPage = () => {
         const data = await response.json();
         const songsData = data.songs || [];
 
+        console.log('📊 Songs API Response:', {
+          totalSongs: songsData.length,
+          sampleSong: songsData[0],
+          pagination: data.pagination,
+          message: data.message
+        });
+
+        if (!songsData || songsData.length === 0) {
+          console.warn('⚠️ No songs found in response. Check database and RLS policies.');
+          setSupabaseSongs([]);
+          setIsLoading(false);
+          return;
+        }
+
         if (songsData && songsData.length > 0) {
           const formattedSongs: Song[] = songsData
-            .filter((song: any) => song.artists?.name || song.artist)
+            .filter((song: any) => {
+              // Include songs that have either artist name or artist text field
+              // Allow songs with "Unknown" artist as well
+              const hasArtist = song.artists?.name || song.artist;
+              const artistName = song.artists?.name || song.artist || '';
+              // Only filter out if artist is completely missing, not if it's "Unknown"
+              if (!hasArtist) {
+                console.warn('⚠️ Song without artist:', song.title, song.id);
+                return false;
+              }
+              return true;
+            })
             .map((song: any) => ({
               id: song.id,
               title: song.title,
-              artist: song.artists?.name || song.artist || '',
+              artist: song.artists?.name || song.artist || 'Unknown Artist',
               key: song.key_signature || 'C',
             difficulty: 'Medium',
             category: 'Gospel',

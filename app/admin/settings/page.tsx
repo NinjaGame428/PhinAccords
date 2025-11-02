@@ -33,12 +33,12 @@ const SettingsPage = () => {
     adminEmail: 'admin@heavenkeys.ca',
     
     // Database Settings
-    databaseUrl: 'Connected to Neon PostgreSQL',
+    databaseUrl: 'Connected to Supabase PostgreSQL',
     databaseStatus: 'healthy',
-    lastBackup: '2024-01-15 10:30:00',
+    lastBackup: new Date().toISOString().split('T')[0],
     
     // Email Settings
-    emailProvider: 'Custom JWT Auth',
+    emailProvider: 'Supabase Auth',
     emailEnabled: true,
     smtpHost: 'smtp.example.com',
     smtpPort: 587,
