@@ -98,3 +98,57 @@
   background-color: #d1d5db;
   margin: 0 4px;
 }
+
+/* Link styling - ensure links are displayed well */
+a {
+  color: #2563eb;
+  text-decoration: underline;
+  text-decoration-color: #2563eb;
+  text-underline-offset: 2px;
+  transition: all 0.2s ease;
+}
+
+a:hover {
+  color: #1d4ed8;
+  text-decoration-color: #1d4ed8;
+}
+
+a:visited {
+  color: #7c3aed;
+}
+
+a:visited:hover {
+  color: #6d28d9;
+}
+
+/* Dark mode link styling */
+.dark a {
+  color: #60a5fa;
+  text-decoration-color: #60a5fa;
+}
+
+.dark a:hover {
+  color: #93c5fd;
+  text-decoration-color: #93c5fd;
+}
+
+.dark a:visited {
+  color: #a78bfa;
+}
+
+.dark a:visited:hover {
+  color: #c4b5fd;
+}
+
+/* Ensure links work in lyrics display */
+.prose a,
+[class*="prose"] a {
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dark .prose a,
+.dark [class*="prose"] a {
+  color: #60a5fa;
+}
