@@ -18,13 +18,46 @@ export async function GET() {
     const totalUsers = usersResult.count || 0;
     const totalResources = resourcesResult.count || 0;
 
+    // Get active users (users who had activity in last 24 hours)
+    let activeUsers = 0;
+    try {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const { count: activeCount } = await serverClient
+        .from('user_sessions')
+        .select('user_id', { count: 'exact', head: false })
+        .gte('updated_at', yesterday.toISOString());
+      
+      if (activeCount !== null) {
+        // Count distinct users
+        const { data: uniqueUsers } = await serverClient
+          .from('user_sessions')
+          .select('user_id')
+          .gte('updated_at', yesterday.toISOString());
+        
+        activeUsers = new Set(uniqueUsers?.map(u => u.user_id) || []).size;
+      }
+    } catch (error) {
+      console.warn('Could not fetch active users:', error);
+      activeUsers = 0;
+    }
+
     return NextResponse.json({
+      stats: {
+        totalSongs,
+        totalArtists,
+        totalUsers,
+        totalResources,
+        activeUsers,
+        collections: 0 // Can be calculated separately if needed
+      },
       overview: {
         totalSongs,
         totalArtists,
         totalUsers,
         totalResources,
-        totalCollections: 0 // Can be calculated separately if needed
+        totalCollections: 0
       }
     });
   } catch (error: any) {

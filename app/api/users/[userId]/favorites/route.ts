@@ -10,43 +10,59 @@ export async function GET(
     const serverClient = createServerClient();
 
     // Fetch favorites with song details
+    // First get favorites that have song_id
     const { data: favorites, error } = await serverClient
       .from('favorites')
       .select(`
         id,
         created_at,
-        songs (
-          id,
-          title,
-          artist,
-          genre,
-          key_signature,
-          slug
-        )
+        song_id
       `)
       .eq('user_id', userId)
       .not('song_id', 'is', null)
       .order('created_at', { ascending: false });
 
     if (error) {
+      console.error('❌ Error fetching favorites:', error);
+      return NextResponse.json({ favorites: [] }, { status: 200 });
+    }
+
+    if (!favorites || favorites.length === 0) {
+      return NextResponse.json({ favorites: [] });
+    }
+
+    // Fetch song details separately for each favorite
+    const favoriteSongs = await Promise.all(
+      favorites.map(async (fav) => {
+        const { data: song } = await serverClient
+          .from('songs')
+          .select('id, title, artist, genre, key_signature, slug')
+          .eq('id', fav.song_id)
+          .single();
+
+        if (!song) return null;
+
+        return {
+          id: song.id,
+          title: song.title,
+          artist: song.artist || 'Unknown Artist',
+          genre: song.genre || 'Gospel',
+          key_signature: song.key_signature || 'C',
+          created_at: fav.created_at,
+          slug: song.slug
+        };
+      })
+    );
+
+    // Filter out null values
+    const validFavorites = favoriteSongs.filter(fav => fav !== null);
+
+    if (error) {
       console.error('❌ Error fetching favorite songs:', error);
       return NextResponse.json({ favorites: [] }, { status: 200 });
     }
 
-    // Transform to match FavoriteSong interface
-    const favoriteSongs = (favorites || [])
-      .filter(fav => fav.songs)
-      .map(fav => ({
-        id: fav.songs.id,
-        title: fav.songs.title,
-        artist: fav.songs.artist || 'Unknown Artist',
-        genre: fav.songs.genre || 'Gospel',
-        key_signature: fav.songs.key_signature || 'C',
-        created_at: fav.created_at,
-        slug: fav.songs.slug
-      }));
-
-    return NextResponse.json({ favorites: favoriteSongs });
+    return NextResponse.json({ favorites: validFavorites });
   } catch (error: any) {
     console.error('❌ Error in GET /api/users/[userId]/favorites:', error);
     return NextResponse.json({ 
