@@ -23,6 +23,47 @@ import {
 } from '@/components/ui/select';
 import PianoChordDiagram from '@/components/piano-chord-diagram';
 
+// Component to fetch and display individual chord with database data
+const ChordPreviewItem = ({ chordName }: { chordName: string }) => {
+  const [chordData, setChordData] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchChordData = async () => {
+      try {
+        const response = await fetch(`/api/piano-chords?chordName=${encodeURIComponent(chordName)}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.chords && data.chords.length > 0) {
+            // Use first matching chord
+            const chord = data.chords[0];
+            setChordData({
+              notes: chord.notes || [],
+              fingers: chord.finger_positions || [],
+              description: chord.description || '',
+              difficulty: chord.difficulty || 'Medium'
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch chord data for', chordName);
+      }
+    };
+    fetchChordData();
+  }, [chordName]);
+
+  return (
+    <div className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+      <PianoChordDiagram
+        chordName={chordName}
+        notes={chordData?.notes || []}
+        fingers={chordData?.fingers || []}
+        description={chordData?.description || ''}
+        difficulty={chordData?.difficulty || 'Medium'}
+      />
+    </div>
+  );
+};
+
 const SongDetailsPage = () => {
   const params = useParams();
   const router = useRouter();
@@ -38,7 +79,7 @@ const SongDetailsPage = () => {
   const [selectedChord, setSelectedChord] = useState<{ name: string; position: { x: number; y: number } } | null>(null);
   const [transposeKey, setTransposeKey] = useState<string | null>(null);
   const [transposedLyrics, setTransposedLyrics] = useState<string | null>(null);
-  const [uniqueChords, setUniqueChords] = useState<Set<string>>(new Set());
+  const [uniqueChords, setUniqueChords] = useState<Set<string>>(new Set()); // Always stores ORIGINAL chords
 
   // Helper function to create slug from title
   const createSlug = (title: string) => {
@@ -139,8 +180,7 @@ const SongDetailsPage = () => {
     });
     
     setTransposedLyrics(transposedHtml);
-    // Extract chords from transposed lyrics
-    extractChords(transposedHtml);
+    // DO NOT update uniqueChords here - keep original chords displayed
   };
 
   // Extract unique chords from lyrics
@@ -608,7 +648,7 @@ const SongDetailsPage = () => {
                             // Reset to original
                             setTransposeKey(null);
                             setTransposedLyrics(null);
-                            extractChords(song.lyrics); // Reset chords
+                            // Chords already show original, no need to reset
                           } else {
                             // Transpose to new key
                             setTransposeKey(newKey);
@@ -838,9 +878,8 @@ const SongDetailsPage = () => {
                     {t('songDetail.chords')} Preview
                   </CardTitle>
                   <CardDescription>
-                    {transposeKey 
-                      ? `Transposed to ${transposeKey}` 
-                      : `Original Key: ${song.key_signature || 'C'}`}
+                    Root Chords ({song.key_signature || 'C'})
+                    {transposeKey && ` • Song transposed to ${transposeKey}`}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -858,15 +897,7 @@ const SongDetailsPage = () => {
                         }
                         return a.localeCompare(b);
                       }).map((chordName) => (
-                        <div key={chordName} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
-                          <PianoChordDiagram
-                            chordName={chordName}
-                            notes={[]}
-                            fingers={[]}
-                            description=""
-                            difficulty="Medium"
-                          />
-                        </div>
+                        <ChordPreviewItem key={chordName} chordName={chordName} />
                       ))}
                     </div>
                   ) : (
