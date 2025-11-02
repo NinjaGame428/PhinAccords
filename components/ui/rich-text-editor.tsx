@@ -136,9 +136,23 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   // Generate chord options based on language
   const generateChordOptions = (): string[] => {
+    // Base chords in English notation (including flats)
+    const englishRoots = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
+    
+    // French notation mapping
+    const englishToFrench: { [key: string]: string } = {
+      'C': 'Do', 'C#': 'Do#', 'Db': 'Ré♭',
+      'D': 'Ré', 'D#': 'Ré#', 'Eb': 'Mi♭',
+      'E': 'Mi',
+      'F': 'Fa', 'F#': 'Fa#', 'Gb': 'Sol♭',
+      'G': 'Sol', 'G#': 'Sol#', 'Ab': 'La♭',
+      'A': 'La', 'A#': 'La#', 'Bb': 'Si♭',
+      'B': 'Si'
+    };
+    
     const roots = language === 'fr'
-      ? ['Do', 'Do#', 'Ré', 'Ré#', 'Mi', 'Fa', 'Fa#', 'Sol', 'Sol#', 'La', 'La#', 'Si']
-      : ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      ? englishRoots.map(root => englishToFrench[root] || root)
+      : englishRoots;
     
     const suffixes = ['', 'm', 'dim', 'aug', 'sus2', 'sus4', '7', 'maj7', 'm7', 'maj9', '9', 'm9', 'add9', '6', 'm6'];
     
