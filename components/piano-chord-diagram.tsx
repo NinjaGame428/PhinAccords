@@ -689,9 +689,9 @@ const PianoChordDiagram = ({
       <CardContent className="flex flex-col items-center">
         {/* Notes Badge Display - Show only if notes are available */}
         {notes && notes.length > 0 && (
-          <div className="mb-3 flex gap-2 flex-wrap justify-center">
+          <div className="mb-1 flex gap-1 flex-wrap justify-center">
             {notes.map(note => (
-              <Badge key={note} variant="secondary" className="text-sm px-3 py-1">
+              <Badge key={note} variant="secondary" className="text-xs px-2 py-0.5">
                 {getDisplayNote(note)}
               </Badge>
             ))}
@@ -701,7 +701,7 @@ const PianoChordDiagram = ({
         {/* Scales-Chords API Piano Chord Image */}
         <div 
           ref={chordImageRef} 
-          className="mb-4 flex justify-center items-center min-h-[200px]"
+          className="mb-2 flex justify-center items-center min-h-[200px]"
           style={{ minHeight: '200px' }}
         >
           {!apiReady && (
@@ -712,11 +712,11 @@ const PianoChordDiagram = ({
         {/* Scales-Chords API Piano Chord Sound */}
         <div 
           ref={chordSoundRef} 
-          className="mb-4 flex justify-center items-center"
+          className="mb-2 flex justify-center items-center"
         />
 
         {/* Piano Keyboard SVG with Red Highlighting */}
-        <div className="relative inline-block mt-4 w-full">
+        <div className="relative inline-block mt-2 w-full">
           <svg width="100%" height="200" viewBox="0 0 350 200" className="bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-lg border-2 border-gray-300 dark:border-gray-700 shadow-lg" preserveAspectRatio="xMidYMid meet">
             {/* Draw white keys */}
             {octaveNotes.filter(n => !n.includes('#') && !n.includes('♭')).map((note, idx) => {

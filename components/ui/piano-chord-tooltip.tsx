@@ -178,7 +178,7 @@ export const PianoChordTooltip: React.FC<PianoChordTooltipProps> = ({ chordName,
       ) : pianoChords.length > 0 ? (
         <div className="max-h-[500px] overflow-y-auto">
           {pianoChords.map((chord, index) => (
-            <div key={index} className="p-2">
+            <div key={index} className="p-1">
               <PianoChordDiagram
                 chordName={normalizedChordName}
                 notes={chord.notes}

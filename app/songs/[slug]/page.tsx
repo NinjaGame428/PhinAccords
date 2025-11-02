@@ -469,16 +469,44 @@ const SongDetailsPage = () => {
                 <CardContent>
                   {song.lyrics && song.lyrics.trim().length > 0 ? (
                     <div className="space-y-6">
-                      {/* Info banner */}
-                      <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm text-blue-800 dark:text-blue-200">
-                        <p className="flex items-center gap-2">
-                          <Music className="h-4 w-4" />
-                          <span>{t('songDetail.linesAdded').replace('{lines}', song.lyrics.split('\n').length.toString())}</span>
-                        </p>
-                      </div>
-                      
                       {/* Render lyrics with proper formatting */}
                       <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <div 
+                          className="font-mono text-base leading-loose whitespace-pre-wrap prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{ __html: song.lyrics }}
+                          onClick={(e) => {
+                            // Handle chord clicks from HTML content
+                            const target = e.target as HTMLElement;
+                            const chordElement = target.closest('.chord');
+                            
+                            if (chordElement) {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              
+                              // Extract chord name from the element
+                              const chordText = chordElement.textContent || '';
+                              const chordName = chordText.replace(/\[|\]/g, '').trim();
+                              
+                              if (chordName) {
+                                const rect = chordElement.getBoundingClientRect();
+                                setSelectedChord({
+                                  name: chordName,
+                                  position: {
+                                    x: rect.left + rect.width / 2,
+                                    y: rect.bottom + 10
+                                  }
+                                });
+                              }
+                            }
+                          }}
+                          style={{
+                            // Ensure chords are styled and clickable
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Legacy rendering for plain text (fallback) */}
+                      <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700 hidden">
                         <div className="font-mono text-base leading-loose whitespace-pre-wrap">
                           {song.lyrics.split('\n').map((line: string, index: number) => {
                             // Check if line is a section header (e.g., [Verse 1], [Chorus])
@@ -570,6 +598,8 @@ const SongDetailsPage = () => {
                           })}
                         </div>
                       </div>
+                      
+                      {/* End legacy rendering */}
 
                       {/* Quick Info */}
                       <div className="flex flex-wrap gap-4 pt-4 border-t">
