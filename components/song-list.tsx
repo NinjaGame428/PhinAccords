@@ -82,19 +82,40 @@ const SongList = () => {
             })
             .map((song: any) => {
               // Extract artist name from various possible structures
-              let artistName = 'Unknown Artist';
+              // Prioritize actual artist names, avoid "Unknown Artist" when possible
+              let artistName = null;
               
               if (song.artists) {
                 // Handle different artist object structures
-                if (typeof song.artists === 'string') {
-                  artistName = song.artists;
-                } else if (song.artists.name) {
-                  artistName = song.artists.name;
-                } else if (Array.isArray(song.artists) && song.artists.length > 0) {
-                  artistName = song.artists[0]?.name || 'Unknown Artist';
+                if (typeof song.artists === 'string' && song.artists.trim() !== '') {
+                  artistName = song.artists.trim();
+                } else if (song.artists.name && song.artists.name.trim() !== '' && song.artists.name !== 'Unknown Artist') {
+                  artistName = song.artists.name.trim();
+                } else if (Array.isArray(song.artists) && song.artists.length > 0 && song.artists[0]?.name) {
+                  artistName = song.artists[0].name.trim();
                 }
-              } else if (song.artist) {
-                artistName = typeof song.artist === 'string' ? song.artist : song.artist.name || 'Unknown Artist';
+              }
+              
+              // Fallback to song.artist field if artists object doesn't have valid name
+              if (!artistName && song.artist) {
+                if (typeof song.artist === 'string' && song.artist.trim() !== '' && song.artist !== 'Unknown Artist') {
+                  artistName = song.artist.trim();
+                } else if (song.artist.name && song.artist.name.trim() !== '' && song.artist.name !== 'Unknown Artist') {
+                  artistName = song.artist.name.trim();
+                }
+              }
+              
+              // Try to extract from title if no artist found (format: "Artist - Song Title")
+              if (!artistName && song.title) {
+                const titleParts = song.title.split(' - ');
+                if (titleParts.length > 1 && titleParts[0]?.trim()) {
+                  artistName = titleParts[0].trim();
+                }
+              }
+              
+              // Only use "Unknown Artist" as absolute last resort
+              if (!artistName) {
+                artistName = 'Unknown Artist';
               }
               
               return {

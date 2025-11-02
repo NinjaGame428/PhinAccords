@@ -91,25 +91,54 @@ export async function GET(request: NextRequest) {
             }
           }
 
-          // Use artist data if available, otherwise use the artist text field
-          // Always provide a fallback artist structure so songs aren't filtered out
-          const finalArtist = artistData || (song.artist ? {
-            id: song.artist_id || null,
-            name: song.artist,
-            bio: null,
-            image_url: null
-          } : {
-            id: null,
-            name: 'Unknown Artist',
-            bio: null,
-            image_url: null
-          });
+          // Use artist data if available, otherwise use the artist text field from the song
+          // Prioritize: fetched artist data > song.artist text field > extract from title if possible
+          let finalArtist = null;
+          
+          if (artistData) {
+            // Best case: We successfully fetched artist from artist_id
+            finalArtist = artistData;
+          } else if (song.artist && song.artist.trim() !== '') {
+            // Fallback: Use the artist text field if it exists and is not empty
+            finalArtist = {
+              id: song.artist_id || null,
+              name: song.artist.trim(),
+              bio: null,
+              image_url: null
+            };
+          } else if (song.artist_id) {
+            // If we have artist_id but couldn't fetch, try to extract from title
+            // Some songs might have artist name in title like "Artist Name - Song Title"
+            const titleParts = song.title?.split(' - ') || [];
+            if (titleParts.length > 1 && titleParts[0]?.trim()) {
+              finalArtist = {
+                id: song.artist_id,
+                name: titleParts[0].trim(),
+                bio: null,
+                image_url: null
+              };
+            } else {
+              // Last resort: Don't set Unknown Artist, let frontend handle it
+              finalArtist = null;
+            }
+          }
+          
+          // Only set Unknown Artist if we truly have no artist information
+          if (!finalArtist) {
+            finalArtist = {
+              id: null,
+              name: null, // Return null instead of 'Unknown Artist' so frontend can handle gracefully
+              bio: null,
+              image_url: null
+            };
+          }
 
           return {
             ...song,
             artists: finalArtist,
             // Also include artist as a string field for backward compatibility
-            artist: finalArtist.name
+            // Use the actual artist name, not null
+            artist: finalArtist.name || null
           };
         })
       );

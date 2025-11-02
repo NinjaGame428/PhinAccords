@@ -81,31 +81,50 @@ const SongsPage = () => {
               }
               return true;
             })
-            .map((song: any) => ({
-              id: song.id,
-              title: song.title,
-              artist: song.artists?.name || song.artist || 'Unknown Artist',
-              key: song.key_signature || 'C',
-            difficulty: 'Medium',
-            category: 'Gospel',
-            year: new Date(song.created_at).getFullYear().toString(),
-            tempo: song.tempo ? `${song.tempo} BPM` : '120 BPM',
-            timeSignature: '4/4',
-            genre: 'Gospel',
-            chords: [],
-            chordProgression: '',
-            lyrics: '',
-            chordChart: '',
-            capo: '',
-            strummingPattern: '',
-            tags: [],
-            downloads: song.downloads || 0,
-            rating: song.rating || 0,
-            description: '',
-            slug: song.slug || song.id,
-            language: 'en',
-            captions_available: false
-          }));
+            .map((song: any) => {
+              // Extract artist name properly
+              let artistName = null;
+              
+              if (song.artists?.name && song.artists.name.trim() !== '' && song.artists.name !== 'Unknown Artist') {
+                artistName = song.artists.name.trim();
+              } else if (song.artist && song.artist.trim() !== '' && song.artist !== 'Unknown Artist') {
+                artistName = typeof song.artist === 'string' ? song.artist.trim() : song.artist.name?.trim();
+              }
+              
+              // Try to extract from title if no artist found (format: "Artist - Song Title")
+              if (!artistName && song.title) {
+                const titleParts = song.title.split(' - ');
+                if (titleParts.length > 1 && titleParts[0]?.trim()) {
+                  artistName = titleParts[0].trim();
+                }
+              }
+              
+              return {
+                id: song.id,
+                title: song.title,
+                artist: artistName || 'Unknown Artist',
+                key: song.key_signature || 'C',
+                difficulty: 'Medium',
+                category: 'Gospel',
+                year: new Date(song.created_at).getFullYear().toString(),
+                tempo: song.tempo ? `${song.tempo} BPM` : '120 BPM',
+                timeSignature: '4/4',
+                genre: 'Gospel',
+                chords: [],
+                chordProgression: '',
+                lyrics: '',
+                chordChart: '',
+                capo: '',
+                strummingPattern: '',
+                tags: [],
+                downloads: song.downloads || 0,
+                rating: song.rating || 0,
+                description: '',
+                slug: song.slug || song.id,
+                language: 'en',
+                captions_available: false
+              };
+            }));
 
           setSupabaseSongs(formattedSongs);
         }

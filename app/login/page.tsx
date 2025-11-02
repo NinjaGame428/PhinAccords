@@ -61,7 +61,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="h-screen overflow-hidden flex flex-col lg:flex-row">
       {/* Mobile Image - Shows on mobile, hidden on desktop */}
       <div className="lg:hidden w-full h-64 relative">
         <div 
