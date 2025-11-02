@@ -55,12 +55,7 @@ export async function GET(
     );
 
     // Filter out null values
-    const validFavorites = favoriteSongs.filter(fav => fav !== null);
-
-    if (error) {
-      console.error('❌ Error fetching favorite songs:', error);
-      return NextResponse.json({ favorites: [] }, { status: 200 });
-    }
+    const validFavorites = favoriteSongs.filter((fav): fav is NonNullable<typeof fav> => fav !== null);
 
     return NextResponse.json({ favorites: validFavorites });
   } catch (error: any) {
