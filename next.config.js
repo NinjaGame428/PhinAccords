@@ -22,6 +22,9 @@ const nextConfig = {
   // Turbopack configuration for Next.js 16
   turbopack: {},
   
+  // Suppress workspace root warning
+  outputFileTracingRoot: require('path').join(__dirname),
+  
   // Webpack optimizations (fallback for --webpack flag)
   webpack: (config, { isServer, dev }) => {
     // Handle SVG files - enable SVG imports
