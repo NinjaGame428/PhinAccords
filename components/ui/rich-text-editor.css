@@ -1,4 +1,31 @@
 /* Rich Text Editor Styles */
+
+/* Chord styling - make chords clickable */
+.chord {
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+  border-radius: 3px;
+  padding: 2px 4px;
+  display: inline-block;
+}
+
+.chord:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+  transform: scale(1.05);
+}
+
+.chord:active {
+  transform: scale(0.98);
+}
+
+/* Prevent text selection issues */
+[contenteditable] .chord {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
 .rich-text-editor [contenteditable]:empty:before {
   content: var(--placeholder);
   color: #9ca3af;

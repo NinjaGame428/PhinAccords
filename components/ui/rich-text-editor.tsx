@@ -18,6 +18,7 @@ import {
   Type,
   Music
 } from 'lucide-react';
+import { ChordTooltip } from './chord-tooltip';
 
 interface RichTextEditorProps {
   content: string;
@@ -34,6 +35,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const [selectedChord, setSelectedChord] = useState<{ name: string; position: { x: number; y: number } } | null>(null);
 
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== content) {
@@ -44,6 +46,59 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const handleInput = () => {
     if (editorRef.current) {
       onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const handleChordClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    
+    // Check if clicked element is a chord or inside a chord span
+    const chordElement = target.closest('.chord');
+    
+    if (chordElement) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Extract chord name from the element
+      const chordText = chordElement.textContent || '';
+      const chordName = chordText.replace(/\[|\]/g, '').trim();
+      
+      if (chordName) {
+        // Get position for tooltip
+        const rect = chordElement.getBoundingClientRect();
+        setSelectedChord({
+          name: chordName,
+          position: {
+            x: rect.left + rect.width / 2,
+            y: rect.bottom
+          }
+        });
+      }
+    }
+  };
+
+  // Detect chord selection via text selection
+  const handleMouseUp = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    
+    const range = selection.getRangeAt(0);
+    const selectedText = range.toString().trim();
+    
+    // Check if selected text looks like a chord (common patterns)
+    const chordPattern = /^[A-G][#b]?(m|maj|min|dim|aug|sus|add|7|9|11|13)?(\d+)?$/i;
+    if (chordPattern.test(selectedText)) {
+      const containerElement = range.commonAncestorContainer.parentElement;
+      if (containerElement) {
+        const rect = range.getBoundingClientRect();
+        setSelectedChord({
+          name: selectedText,
+          position: {
+            x: rect.left + rect.width / 2,
+            y: rect.bottom + 10
+          }
+        });
+      }
     }
   };
 
@@ -209,12 +264,22 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           onInput={handleInput}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
+          onClick={handleChordClick}
+          onMouseUp={handleMouseUp}
           data-placeholder={placeholder}
           style={{
             '--placeholder': `"${placeholder}"`,
           } as React.CSSProperties}
         />
         
+        {/* Chord Diagram Tooltip */}
+        {selectedChord && (
+          <ChordTooltip
+            chordName={selectedChord.name}
+            position={selectedChord.position}
+            onClose={() => setSelectedChord(null)}
+          />
+        )}
       </CardContent>
     </Card>
   );
