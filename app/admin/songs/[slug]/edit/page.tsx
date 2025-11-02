@@ -7,17 +7,17 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 
 const SongEditPage = () => {
   const params = useParams();
-  const [songSlug, setSongSlug] = useState<string>('');
+  const [songIdentifier, setSongIdentifier] = useState<string>('');
 
   useEffect(() => {
-    // Ensure params.slug is properly resolved
+    // Support both slug and id (UUID) - the API handles both
     if (params?.slug) {
-      const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
-      setSongSlug(slug);
+      const identifier = Array.isArray(params.slug) ? params.slug[0] : params.slug;
+      setSongIdentifier(identifier);
     }
   }, [params]);
 
-  if (!songSlug) {
+  if (!songIdentifier) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-screen">
@@ -31,10 +31,9 @@ const SongEditPage = () => {
 
   return (
     <AdminLayout>
-      <SimpleSongEditor songSlug={songSlug} />
+      <SimpleSongEditor songSlug={songIdentifier} />
     </AdminLayout>
   );
 };
 
 export default SongEditPage;
-
