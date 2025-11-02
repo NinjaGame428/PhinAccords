@@ -101,6 +101,15 @@ const SongDetailsPage = () => {
     const targetIndex = getSemitoneIndex(targetKey);
     const semitones = targetIndex - originalIndex;
     
+    console.log('🎹 Transposing:', {
+      originalKey,
+      originalIndex,
+      targetKey,
+      targetIndex,
+      semitones,
+      calculatedTarget: getKeyFromIndex(targetIndex, true)
+    });
+    
     if (semitones === 0) {
       setTransposedLyrics(null);
       return;
