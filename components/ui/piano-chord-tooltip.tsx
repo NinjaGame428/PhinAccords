@@ -4,9 +4,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { PianoChordDiagram } from '@/components/piano-chord-diagram';
 
-// Export the normalize function for use in other components
-export const normalizeChordNameForPiano = normalizeChordName;
-
 interface PianoChordTooltipProps {
   chordName: string;
   position: { x: number; y: number };

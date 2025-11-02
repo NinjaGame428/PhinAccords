@@ -606,6 +606,15 @@ const SongDetailsPage = () => {
                       </div>
                     </div>
                   )}
+                  
+                  {/* Piano Chord Tooltip */}
+                  {selectedChord && (
+                    <PianoChordTooltip
+                      chordName={selectedChord.name}
+                      position={selectedChord.position}
+                      onClose={() => setSelectedChord(null)}
+                    />
+                  )}
                 </CardContent>
               </Card>
             </div>
