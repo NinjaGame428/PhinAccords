@@ -234,8 +234,9 @@ export const SimpleSongEditor: React.FC<SimpleSongEditorProps> = ({ songSlug, so
   };
 
   const handleSave = async () => {
-    if (!songData.title.trim()) {
-      showNotification('Please enter a song title', 'error');
+    // Validate required fields
+    if (!songData.title || !songData.title.trim()) {
+      showNotification('Title is required', 'error');
       return;
     }
 

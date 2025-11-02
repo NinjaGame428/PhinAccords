@@ -62,7 +62,47 @@ export async function PUT(
   try {
     const resolvedParams = await params;
     const body = await request.json();
+    
+    // Validate title is required
+    if (!body.title || !body.title.trim()) {
+      return NextResponse.json({ 
+        error: 'Title is required',
+        details: 'Song title cannot be empty'
+      }, { status: 400 });
+    }
+    
+    // Get authenticated user
+    const { getCurrentUser } = await import('@/lib/auth');
+    const currentUser = await getCurrentUser();
+    
+    if (!currentUser) {
+      return NextResponse.json({ 
+        error: 'Unauthorized',
+        details: 'You must be logged in to update songs'
+      }, { status: 401 });
+    }
+    
+    // Check if user is admin - use service role key for admin operations
     const serverClient = createServerClient();
+    const { data: userProfile } = await serverClient
+      .from('users')
+      .select('role')
+      .eq('id', currentUser.id)
+      .single();
+    
+    const isAdmin = userProfile?.role === 'admin';
+    
+    if (!isAdmin) {
+      return NextResponse.json({ 
+        error: 'Forbidden',
+        details: 'Only administrators can update songs'
+      }, { status: 403 });
+    }
+    
+    // Use service role client for admin operations if available
+    const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY 
+      ? createServerClient() // Already uses service role if available
+      : serverClient;
     
     // Extract only the fields we want to update, and handle them properly
     const {
@@ -89,12 +129,12 @@ export async function PUT(
       updateData.artist_id = artist_id.trim();
       
       // Also update artist text field if we have artist_id
-      if (artist_id) {
+      if (artist_id && artist_id.trim() !== '') {
         try {
-          const { data: artist } = await serverClient
+          const { data: artist } = await adminClient
             .from('artists')
             .select('name')
-            .eq('id', artist_id)
+            .eq('id', artist_id.trim())
             .single();
           
           if (artist?.name) {
@@ -103,6 +143,9 @@ export async function PUT(
         } catch (err) {
           console.warn('Could not fetch artist name for update:', err);
         }
+      } else {
+        // Clear artist if artist_id is empty
+        updateData.artist = null;
       }
     }
     if (key_signature !== undefined) {
@@ -137,7 +180,7 @@ export async function PUT(
     });
 
     // First check if song exists
-    const { data: existingSong, error: checkError } = await serverClient
+    const { data: existingSong, error: checkError } = await adminClient
       .from('songs')
       .select('id')
       .eq('id', resolvedParams.id)
@@ -152,7 +195,7 @@ export async function PUT(
     }
 
     // Perform the update
-    const { data: updateResult, error: updateError } = await serverClient
+    const { data: updateResult, error: updateError } = await adminClient
       .from('songs')
       .update(updateData)
       .eq('id', resolvedParams.id)
@@ -175,7 +218,7 @@ export async function PUT(
     }
 
     // Fetch the updated song with artist relation
-    const { data: songData, error: fetchError } = await serverClient
+    const { data: songData, error: fetchError } = await adminClient
       .from('songs')
       .select(`
         *,
