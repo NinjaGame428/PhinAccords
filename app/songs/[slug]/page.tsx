@@ -104,33 +104,27 @@ const SongDetailsPage = () => {
       return;
     }
     
-    // Create a temporary DOM element to parse HTML
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = song.lyrics;
+    // Replace chords in HTML format: <span class="chord">[ChordName]</span>
+    let transposedHtml = song.lyrics;
     
-    // Find all chord spans
-    const chordElements = tempDiv.querySelectorAll('.chord');
-    chordElements.forEach((element) => {
-      const chordText = element.textContent || '';
-      // Extract chord name from [Chord] format
-      const chordName = chordText.replace(/\[|\]/g, '').trim();
-      
-      if (chordName) {
-        const transposedChord = transposeChord(chordName, semitones);
-        element.textContent = `[${transposedChord}]`;
-        // Update any data attributes if needed
-        if (element instanceof HTMLElement) {
-          element.setAttribute('data-original-chord', chordName);
-        }
-      }
+    // Pattern to match chord spans: <span class="chord" ...>[ChordName]</span>
+    const chordSpanPattern = /<span\s+class="chord"[^>]*>\[([^\]]+)\]<\/span>/gi;
+    
+    transposedHtml = transposedHtml.replace(chordSpanPattern, (match, chordName) => {
+      const transposed = transposeChord(chordName.trim(), semitones);
+      // Preserve the original span attributes
+      return match.replace(/\[([^\]]+)\]/, `[${transposed}]`);
     });
     
-    // Also find chord patterns in text (e.g., standalone chord names)
-    const textContent = tempDiv.textContent || '';
-    const chordPattern = /\[([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|7|9|11|13)?(?:\/[A-G][#b]?)?)\]/gi;
-    const transposedHtml = tempDiv.innerHTML.replace(chordPattern, (match, chordName) => {
-      const transposed = transposeChord(chordName, semitones);
-      return `[${transposed}]`;
+    // Also handle any standalone chord patterns in brackets
+    const standaloneChordPattern = /\[([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|7|9|11|13)?(?:\/[A-G][#b]?)?)\]/gi;
+    transposedHtml = transposedHtml.replace(standaloneChordPattern, (match, chordName) => {
+      // Only replace if not already inside a chord span
+      if (!match.includes('class="chord"')) {
+        const transposed = transposeChord(chordName, semitones);
+        return `[${transposed}]`;
+      }
+      return match;
     });
     
     setTransposedLyrics(transposedHtml);
