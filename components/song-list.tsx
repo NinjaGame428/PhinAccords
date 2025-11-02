@@ -19,6 +19,7 @@ interface Song {
   category: string;
   slug?: string;
   year?: string | number;
+  updated_at?: string;
 }
 
 const SongList = () => {
