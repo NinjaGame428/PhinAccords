@@ -93,30 +93,32 @@ const PianoChordsPage = () => {
   // Function to convert chord names to French
   const getChordName = (chordName: string) => {
     if (language === 'fr') {
-      const chordMap: { [key: string]: string } = {
-        'C': 'Do',
-        'C#': 'Do#',
-        'Db': 'Ré♭',
-        'D': 'Ré',
-        'D#': 'Ré#',
-        'Eb': 'Mi♭',
-        'E': 'Mi',
-        'F': 'Fa',
-        'F#': 'Fa#',
-        'Gb': 'Sol♭',
-        'G': 'Sol',
-        'G#': 'Sol#',
-        'Ab': 'La♭',
-        'A': 'La',
-        'A#': 'La#',
-        'Bb': 'Si♭',
-        'B': 'Si',
-      };
+      // Order matters: replace longer patterns first to avoid partial matches
+      // Process from longest to shortest to avoid "D" matching inside "D#"
+      const replacements: Array<{ pattern: RegExp; replacement: string }> = [
+        { pattern: /^C#/, replacement: 'Do#' },
+        { pattern: /^Db/, replacement: 'Ré♭' },
+        { pattern: /^D#/, replacement: 'Ré#' },
+        { pattern: /^Eb/, replacement: 'Mi♭' },
+        { pattern: /^F#/, replacement: 'Fa#' },
+        { pattern: /^Gb/, replacement: 'Sol♭' },
+        { pattern: /^G#/, replacement: 'Sol#' },
+        { pattern: /^Ab/, replacement: 'La♭' },
+        { pattern: /^A#/, replacement: 'La#' },
+        { pattern: /^Bb/, replacement: 'Si♭' },
+        { pattern: /^C(?![#b])/, replacement: 'Do' }, // C not followed by # or b
+        { pattern: /^D(?![#b])/, replacement: 'Ré' }, // D not followed by # or b
+        { pattern: /^E(?![#b])/, replacement: 'Mi' }, // E not followed by # or b
+        { pattern: /^F(?![#b])/, replacement: 'Fa' }, // F not followed by # or b
+        { pattern: /^G(?![#b])/, replacement: 'Sol' }, // G not followed by # or b
+        { pattern: /^A(?![#b])/, replacement: 'La' }, // A not followed by # or b
+        { pattern: /^B(?![#b])/, replacement: 'Si' }, // B not followed by # or b
+      ];
       
-      // Replace chord names in the chord name string
+      // Replace chord names in the chord name string (only match at start to avoid issues)
       let frenchChord = chordName;
-      Object.entries(chordMap).forEach(([english, french]) => {
-        frenchChord = frenchChord.replace(new RegExp(english, 'g'), french);
+      replacements.forEach(({ pattern, replacement }) => {
+        frenchChord = frenchChord.replace(pattern, replacement);
       });
       return frenchChord;
     }
