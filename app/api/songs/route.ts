@@ -12,74 +12,156 @@ export async function GET(request: NextRequest) {
     
     const serverClient = createServerClient();
     
-    // Get total count
-    const { count } = await serverClient
-      .from('songs')
-      .select('*', { count: 'exact', head: true });
+    try {
+      // First, try to get total count
+      const { count, error: countError } = await serverClient
+        .from('songs')
+        .select('*', { count: 'exact', head: true });
 
-    // Fetch songs with artist info
-    const { data: songs, error } = await serverClient
-      .from('songs')
-      .select(`
-        *,
-        artists:artist_id (
-          id,
-          name,
-          bio,
-          image_url
-        )
-      `)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + maxLimit - 1);
+      // If table doesn't exist or RLS blocks access, return empty
+      if (countError) {
+        console.error('Error getting song count:', countError);
+        // Check if it's a "relation does not exist" error
+        if (countError.message?.includes('does not exist') || countError.code === '42P01') {
+          console.warn('Songs table does not exist yet. Please deploy the database schema.');
+          return NextResponse.json({ 
+            songs: [], 
+            pagination: {
+              page,
+              limit: maxLimit,
+              total: 0,
+              totalPages: 0
+            },
+            message: 'Database schema not deployed. Please run the SQL migration files in Supabase.'
+          });
+        }
+        // For RLS errors, return empty but with count 0
+        return NextResponse.json({ 
+          songs: [], 
+          pagination: {
+            page,
+            limit: maxLimit,
+            total: 0,
+            totalPages: 0
+          }
+        });
+      }
 
-    if (error) {
-      console.error('Error fetching songs:', error);
-      return NextResponse.json({ error: 'Failed to fetch songs' }, { status: 500 });
-    }
+      // Fetch songs - try with artist relation first, fallback to simple select
+      let songs: any[] = [];
+      let error: any = null;
 
-    // Process songs to handle null artist_ids
-    const processedSongs = songs?.map((song: any) => {
-      const artist = Array.isArray(song.artists) ? song.artists[0] : song.artists;
-      
-      if (!artist && song.artist) {
+      // Try with artist relation
+      const songsWithArtists = await serverClient
+        .from('songs')
+        .select(`
+          *,
+          artists:artist_id (
+            id,
+            name,
+            bio,
+            image_url
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + maxLimit - 1);
+
+      if (songsWithArtists.error) {
+        // If relation fails (RLS or no foreign key), try simple select
+        console.warn('Artist relation failed, trying simple select:', songsWithArtists.error);
+        const simpleSelect = await serverClient
+          .from('songs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(offset, offset + maxLimit - 1);
+        
+        if (simpleSelect.error) {
+          error = simpleSelect.error;
+        } else {
+          songs = simpleSelect.data || [];
+        }
+      } else {
+        songs = songsWithArtists.data || [];
+      }
+
+      if (error) {
+        console.error('Error fetching songs:', error);
+        // Don't fail completely - return empty array
+        return NextResponse.json({ 
+          songs: [], 
+          pagination: {
+            page,
+            limit: maxLimit,
+            total: count || 0,
+            totalPages: Math.ceil((count || 0) / maxLimit)
+          }
+        });
+      }
+
+      // Process songs to handle null artist_ids
+      const processedSongs = songs.map((song: any) => {
+        const artist = Array.isArray(song.artists) ? song.artists[0] : song.artists;
+        
+        if (!artist && song.artist) {
+          return {
+            ...song,
+            artists: {
+              id: song.artist_id || null,
+              name: song.artist,
+              bio: null,
+              image_url: null
+            }
+          };
+        }
+        
         return {
           ...song,
-          artists: {
-            id: song.artist_id || null,
-            name: song.artist,
-            bio: null,
-            image_url: null
-          }
+          artists: artist || null
         };
-      }
-      
-      return {
-        ...song,
-        artists: artist || null
-      };
-    }) || [];
+      });
 
-    const response = NextResponse.json({ 
-      songs: processedSongs, 
-      pagination: {
-        page,
-        limit: maxLimit,
-        total: count || 0,
-        totalPages: Math.ceil((count || 0) / maxLimit)
-      }
-    });
-    
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    response.headers.set('Pragma', 'no-cache');
-    response.headers.set('Expires', '0');
-    
-    return response;
+      const response = NextResponse.json({ 
+        songs: processedSongs, 
+        pagination: {
+          page,
+          limit: maxLimit,
+          total: count || 0,
+          totalPages: Math.ceil((count || 0) / maxLimit)
+        }
+      });
+      
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      
+      return response;
+    } catch (dbError: any) {
+      console.error('Database error in GET /api/songs:', dbError);
+      return NextResponse.json({ 
+        songs: [],
+        pagination: {
+          page,
+          limit: maxLimit,
+          total: 0,
+          totalPages: 0
+        },
+        error: 'Database connection failed',
+        details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+      }, { status: 200 }); // Return 200 with empty array instead of 500
+    }
   } catch (error: any) {
     console.error('Error in GET /api/songs:', error);
     return NextResponse.json({ 
+      songs: [],
+      pagination: {
+        page: 1,
+        limit: 50,
+        total: 0,
+        totalPages: 0
+      },
       error: 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    }, { status: 500 });
+    }, { status: 200 }); // Return 200 with empty array
   }
 }
 
