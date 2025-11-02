@@ -22,7 +22,9 @@ export async function GET(request: NextRequest) {
       query = query.eq('difficulty', difficulty);
     }
     if (chordName) {
-      query = query.ilike('chord_name', `%${chordName}%`);
+      // Search by exact chord name or root_name
+      // This allows finding all inversions of a chord (e.g., "C" finds C, C/firstinversion, C/secondinversion)
+      query = query.or(`chord_name.ilike.%${chordName}%,root_name.ilike.%${chordName}%`);
     }
 
     const { data: chords, error } = await query;
