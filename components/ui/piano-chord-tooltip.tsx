@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { PianoChordDiagram } from '@/components/piano-chord-diagram';
+import PianoChordDiagram from '@/components/piano-chord-diagram';
 
 interface PianoChordTooltipProps {
   chordName: string;
