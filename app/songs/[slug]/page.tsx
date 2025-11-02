@@ -306,8 +306,8 @@ const SongDetailsPage = () => {
   return (
     <>
       <Navbar />
-      <main className="pt-16 min-h-screen">
-        <div className="container mx-auto px-4 py-8">
+      <main className="pt-16 min-h-screen w-full">
+        <div className="w-full px-4 py-8">
           {/* Back Button */}
           <div className="mb-6">
             <Link href={getTranslatedRoute('/songs', language)}>
@@ -318,7 +318,7 @@ const SongDetailsPage = () => {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-full">
             {/* Song Info - Moved to Top Left */}
             <div className="lg:col-span-2 space-y-6">
               <Card>
@@ -327,9 +327,6 @@ const SongDetailsPage = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <CardTitle className="text-3xl">{song.title}</CardTitle>
-                        {isRefreshing && (
-                          <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
-                        )}
                       </div>
                       {song.english_title && (
                         <CardDescription className="text-lg">{song.english_title}</CardDescription>
@@ -353,15 +350,6 @@ const SongDetailsPage = () => {
                       )}
                     </div>
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleManualRefresh}
-                        disabled={isRefreshing}
-                        title="Refresh song data"
-                      >
-                        <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -450,7 +438,7 @@ const SongDetailsPage = () => {
 
 
               {/* Lyrics & Chords */}
-              <Card>
+              <Card className="w-full">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <div className="flex items-center">
@@ -467,44 +455,18 @@ const SongDetailsPage = () => {
                     {t('songDetail.followAlong')}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="w-full">
                   {song.lyrics && song.lyrics.trim().length > 0 ? (
                     <div className="space-y-6">
                       {/* Render lyrics with proper formatting */}
-                      <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700 w-full">
                         <div 
-                          ref={(el) => {
-                            // Process links after rendering to ensure external links open in new tab
-                            if (el) {
-                              const links = el.querySelectorAll('a');
-                              links.forEach((link) => {
-                                const href = link.getAttribute('href');
-                                if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
-                                  if (!link.hasAttribute('target')) {
-                                    link.setAttribute('target', '_blank');
-                                    link.setAttribute('rel', 'noopener noreferrer');
-                                  }
-                                }
-                              });
-                            }
-                          }}
-                          className="font-mono text-base leading-loose whitespace-pre-wrap prose prose-sm max-w-none"
+                          className="font-mono text-base leading-loose whitespace-pre-wrap prose prose-sm max-w-none w-full"
                           dangerouslySetInnerHTML={{ __html: song.lyrics }}
                           onClick={(e) => {
                             // Handle chord clicks from HTML content
                             const target = e.target as HTMLElement;
                             const chordElement = target.closest('.chord');
-                            const linkElement = target.closest('a');
-                            
-                            // If clicking a link, let it work normally (but ensure external links open in new tab)
-                            if (linkElement && !linkElement.hasAttribute('target')) {
-                              const href = linkElement.getAttribute('href');
-                              if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
-                                linkElement.setAttribute('target', '_blank');
-                                linkElement.setAttribute('rel', 'noopener noreferrer');
-                              }
-                              return; // Let the link work normally
-                            }
                             
                             if (chordElement) {
                               e.preventDefault();
@@ -525,6 +487,9 @@ const SongDetailsPage = () => {
                                 });
                               }
                             }
+                          }}
+                          style={{
+                            // Ensure chords are styled and clickable
                           }}
                         />
                       </div>
