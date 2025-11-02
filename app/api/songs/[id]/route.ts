@@ -82,7 +82,7 @@ export async function PUT(
       }, { status: 401 });
     }
     
-    // Check if user is admin - use service role key for admin operations
+    // Check if user is admin
     const serverClient = createServerClient();
     const { data: userProfile } = await serverClient
       .from('users')
@@ -99,10 +99,33 @@ export async function PUT(
       }, { status: 403 });
     }
     
-    // Use service role client for admin operations if available
-    const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY 
-      ? createServerClient() // Already uses service role if available
-      : serverClient;
+    // Create authenticated client with user session for RLS policies
+    // The RLS policies will check if the user is admin and allow the operation
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('sb-access-token')?.value;
+    
+    if (!accessToken) {
+      return NextResponse.json({ 
+        error: 'Unauthorized',
+        details: 'Session token not found'
+      }, { status: 401 });
+    }
+    
+    // Create authenticated client using the user's session token
+    // This ensures RLS policies can check auth.uid() properly
+    const { createClient } = await import('@supabase/supabase-js');
+    const adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        }
+      }
+    );
     
     // Extract only the fields we want to update, and handle them properly
     const {
