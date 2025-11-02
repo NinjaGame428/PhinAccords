@@ -15,6 +15,8 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     minimumCacheTTL: 60,
+    // Enable emoji and SVG support
+    remotePatterns: [],
   },
   
   // Turbopack configuration for Next.js 16
@@ -22,6 +24,12 @@ const nextConfig = {
   
   // Webpack optimizations (fallback for --webpack flag)
   webpack: (config, { isServer, dev }) => {
+    // Handle SVG files - enable SVG imports
+    config.module.rules.push({
+      test: /\.svg$/,
+      use: ['@svgr/webpack'],
+    });
+    
     // Development: Fix chunk loading issues
     if (dev && !isServer) {
       config.optimization = {

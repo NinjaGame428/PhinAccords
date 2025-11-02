@@ -11,6 +11,8 @@ import {
 import { Globe, Check } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getTranslatedRoute, getEnglishRoute } from "@/lib/url-translations";
+import { USFlag } from "@/components/flags/us-flag";
+import { FRFlag } from "@/components/flags/fr-flag";
 
 const LanguageSwitcher = () => {
   const { language, setLanguage } = useLanguage();
@@ -18,8 +20,20 @@ const LanguageSwitcher = () => {
   const pathname = usePathname();
 
   const languages = [
-    { code: 'en', name: 'English', flag: 'US', flagEmoji: '🇺🇸' },
-    { code: 'fr', name: 'Français', flag: 'FR', flagEmoji: '🇫🇷' }
+    { 
+      code: 'en', 
+      name: 'English', 
+      flag: 'US', 
+      flagEmoji: '🇺🇸',
+      FlagComponent: USFlag
+    },
+    { 
+      code: 'fr', 
+      name: 'Français', 
+      flag: 'FR', 
+      flagEmoji: '🇫🇷',
+      FlagComponent: FRFlag
+    }
   ];
 
   const currentLanguage = languages.find(lang => lang.code === language);
@@ -56,16 +70,18 @@ const LanguageSwitcher = () => {
     router.push(newUrl);
   };
 
-  // Flag component that works better across systems
-  const FlagIcon = ({ countryCode, emoji }: { countryCode: string; emoji: string }) => {
+  // Flag component with SVG fallback to emoji
+  const FlagIcon = ({ lang }: { lang: typeof languages[0] }) => {
+    const FlagSvg = lang.FlagComponent;
+    
     return (
-      <span 
-        className="inline-block text-lg leading-none" 
-        role="img" 
-        aria-label={`${countryCode} flag`}
-        style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-      >
-        {emoji}
+      <span className="inline-flex items-center justify-center relative">
+        {/* SVG Flag - Primary */}
+        <FlagSvg className="w-5 h-4 rounded-sm" />
+        {/* Emoji fallback - hidden but available for screen readers */}
+        <span className="sr-only" aria-hidden="true">
+          {lang.flagEmoji}
+        </span>
       </span>
     );
   };
@@ -75,12 +91,12 @@ const LanguageSwitcher = () => {
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="rounded-full hover:bg-accent">
           <Globe className="h-4 w-4 mr-2" />
-          <span className="hidden sm:inline flex items-center gap-1.5">
-            <FlagIcon countryCode={currentLanguage?.flag || 'US'} emoji={currentLanguage?.flagEmoji || '🇺🇸'} />
+          <span className="hidden sm:inline-flex items-center gap-1.5">
+            {currentLanguage && <FlagIcon lang={currentLanguage} />}
             {currentLanguage?.name}
           </span>
           <span className="sm:hidden">
-            <FlagIcon countryCode={currentLanguage?.flag || 'US'} emoji={currentLanguage?.flagEmoji || '🇺🇸'} />
+            {currentLanguage && <FlagIcon lang={currentLanguage} />}
           </span>
         </Button>
       </DropdownMenuTrigger>
@@ -92,7 +108,7 @@ const LanguageSwitcher = () => {
             className="cursor-pointer flex items-center justify-between"
           >
             <div className="flex items-center gap-2">
-              <FlagIcon countryCode={lang.flag} emoji={lang.flagEmoji} />
+              <FlagIcon lang={lang} />
               <span>{lang.name}</span>
             </div>
             {language === lang.code && (
