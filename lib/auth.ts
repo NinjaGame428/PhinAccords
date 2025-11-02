@@ -7,6 +7,7 @@ export interface AuthUser {
   full_name: string | null;
   avatar_url: string | null;
   role: 'user' | 'moderator' | 'admin';
+  created_at?: string;
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
