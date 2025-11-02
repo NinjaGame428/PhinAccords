@@ -479,6 +479,17 @@ const SongDetailsPage = () => {
                             // Handle chord clicks from HTML content
                             const target = e.target as HTMLElement;
                             const chordElement = target.closest('.chord');
+                            const linkElement = target.closest('a');
+                            
+                            // If clicking a link, let it work normally (but ensure external links open in new tab)
+                            if (linkElement && !linkElement.hasAttribute('target')) {
+                              const href = linkElement.getAttribute('href');
+                              if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+                                linkElement.setAttribute('target', '_blank');
+                                linkElement.setAttribute('rel', 'noopener noreferrer');
+                              }
+                              return; // Let the link work normally
+                            }
                             
                             if (chordElement) {
                               e.preventDefault();
@@ -499,9 +510,6 @@ const SongDetailsPage = () => {
                                 });
                               }
                             }
-                          }}
-                          style={{
-                            // Ensure chords are styled and clickable
                           }}
                         />
                       </div>
