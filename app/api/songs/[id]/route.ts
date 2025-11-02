@@ -136,10 +136,47 @@ export async function PUT(
       lyricsLength: updateData.lyrics?.length || 0
     });
 
-    const { data: songData, error } = await serverClient
+    // First check if song exists
+    const { data: existingSong, error: checkError } = await serverClient
+      .from('songs')
+      .select('id')
+      .eq('id', resolvedParams.id)
+      .single();
+
+    if (checkError || !existingSong) {
+      console.error('❌ Song not found:', checkError);
+      return NextResponse.json({ 
+        error: 'Song not found',
+        details: process.env.NODE_ENV === 'development' ? checkError?.message : undefined
+      }, { status: 404 });
+    }
+
+    // Perform the update
+    const { data: updateResult, error: updateError } = await serverClient
       .from('songs')
       .update(updateData)
       .eq('id', resolvedParams.id)
+      .select();
+
+    if (updateError) {
+      console.error('❌ Error updating song:', updateError);
+      return NextResponse.json({ 
+        error: 'Failed to update song',
+        details: process.env.NODE_ENV === 'development' ? updateError.message : undefined
+      }, { status: 500 });
+    }
+
+    if (!updateResult || updateResult.length === 0) {
+      console.error('❌ No rows updated - possible RLS policy issue');
+      return NextResponse.json({ 
+        error: 'Update failed - no rows affected',
+        details: 'This may be due to Row Level Security policies. Please check your permissions.'
+      }, { status: 500 });
+    }
+
+    // Fetch the updated song with artist relation
+    const { data: songData, error: fetchError } = await serverClient
+      .from('songs')
       .select(`
         *,
         artists:artist_id (
@@ -149,22 +186,19 @@ export async function PUT(
           image_url
         )
       `)
+      .eq('id', resolvedParams.id)
       .single();
 
-    if (error) {
-      console.error('❌ Error updating song:', error);
+    if (fetchError || !songData) {
+      console.error('❌ Error fetching updated song:', fetchError);
+      // Return the update result even if we can't fetch with relations
+      const songWithoutRelations = updateResult[0];
       return NextResponse.json({ 
-        error: 'Failed to update song',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      }, { status: 500 });
-    }
-
-    if (!songData) {
-      console.error('❌ No song data returned after update');
-      return NextResponse.json({ 
-        error: 'Song not found after update',
-        details: 'The song may have been deleted'
-      }, { status: 404 });
+        song: {
+          ...songWithoutRelations,
+          artists: songWithoutRelations.artist_id ? null : null
+        }
+      });
     }
 
     // Process artist data

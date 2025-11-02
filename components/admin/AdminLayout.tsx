@@ -256,10 +256,12 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">{t('admin.common.adminSince')}</span>
                       <Badge variant="secondary" className="text-xs">
-                        {new Date(user.joinDate).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          year: 'numeric' 
-                        })}
+                        {user.joinDate && !isNaN(new Date(user.joinDate).getTime()) 
+                          ? new Date(user.joinDate).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              year: 'numeric' 
+                            })
+                          : 'N/A'}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between text-sm">

@@ -24,10 +24,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
       }
 
-      // Get user profile
+      // Get user profile with created_at from database
       const { data: profile } = await serverClient
         .from('users')
-        .select('id, email, full_name, avatar_url, role')
+        .select('id, email, full_name, avatar_url, role, created_at')
         .eq('id', data.user.id)
         .single();
 
@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
         email: data.user.email!,
         full_name: data.user.user_metadata?.full_name || null,
         avatar_url: data.user.user_metadata?.avatar_url || null,
-        role: 'user' as const
+        role: 'user' as const,
+        created_at: data.user.created_at || new Date().toISOString()
       };
 
       return NextResponse.json({ user }, { status: 200 });

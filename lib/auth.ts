@@ -25,7 +25,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     // Get user profile from public.users table
     const { data: profile } = await serverClient
       .from('users')
-      .select('id, email, full_name, avatar_url, role')
+      .select('id, email, full_name, avatar_url, role, created_at')
       .eq('id', user.id)
       .single();
     
@@ -36,7 +36,8 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
         email: user.email!,
         full_name: user.user_metadata?.full_name || null,
         avatar_url: user.user_metadata?.avatar_url || null,
-        role: 'user'
+        role: 'user',
+        created_at: user.created_at || new Date().toISOString()
       };
     }
     
@@ -45,7 +46,8 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       email: profile.email,
       full_name: profile.full_name,
       avatar_url: profile.avatar_url,
-      role: profile.role
+      role: profile.role,
+      created_at: profile.created_at || new Date().toISOString()
     };
   } catch (error) {
     console.error('Error getting current user:', error);

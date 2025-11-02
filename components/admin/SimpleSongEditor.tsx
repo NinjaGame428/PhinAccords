@@ -329,23 +329,31 @@ export const SimpleSongEditor: React.FC<SimpleSongEditorProps> = ({ songSlug, so
 
       if (!response.ok) {
         let errorMessage = 'Failed to save song';
+        let errorDetails: any = null;
+        
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.details || errorMessage;
+          const errorText = await response.text();
+          
+          // Try to parse as JSON
+          try {
+            errorDetails = JSON.parse(errorText);
+            errorMessage = errorDetails.error || errorDetails.details || errorDetails.message || errorMessage;
+          } catch {
+            // If not JSON, use text as error message
+            errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`;
+          }
+          
           console.error('❌ API Error Response:', {
             status: response.status,
             statusText: response.statusText,
-            error: errorData
+            error: errorDetails || errorText,
+            url: response.url
           });
         } catch (e) {
-          const errorText = await response.text();
-          console.error('❌ API Error (non-JSON):', {
-            status: response.status,
-            statusText: response.statusText,
-            body: errorText
-          });
-          errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`;
+          console.error('❌ Error parsing API error response:', e);
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         }
+        
         throw new Error(errorMessage);
       }
 
