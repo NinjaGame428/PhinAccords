@@ -31,6 +31,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RichTextEditorProps {
   content: string;
@@ -46,11 +55,13 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   className = ""
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
+  const { language } = useLanguage();
   const [isFocused, setIsFocused] = useState(false);
   const [selectedChord, setSelectedChord] = useState<{ name: string; position: { x: number; y: number } } | null>(null);
   const [fontSize, setFontSize] = useState(14);
   const [fontFamily, setFontFamily] = useState('Arial');
   const [textColor, setTextColor] = useState('#000000');
+  const [chordDialogOpen, setChordDialogOpen] = useState(false);
 
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== content) {
@@ -123,12 +134,30 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     handleInput();
   };
 
-  const insertChord = () => {
-    const chord = prompt('Enter chord name:');
-    if (chord) {
-      const chordElement = `<span class="chord" style="color: #3b82f6; font-weight: bold; margin-right: 8px;">[${chord}]</span>`;
-      execCommand('insertHTML', chordElement);
-    }
+  // Generate chord options based on language
+  const generateChordOptions = (): string[] => {
+    const roots = language === 'fr'
+      ? ['Do', 'Do#', 'Ré', 'Ré#', 'Mi', 'Fa', 'Fa#', 'Sol', 'Sol#', 'La', 'La#', 'Si']
+      : ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    
+    const suffixes = ['', 'm', 'dim', 'aug', 'sus2', 'sus4', '7', 'maj7', 'm7', 'maj9', '9', 'm9', 'add9', '6', 'm6'];
+    
+    const chords: string[] = [];
+    roots.forEach(root => {
+      suffixes.forEach(suffix => {
+        chords.push(root + suffix);
+      });
+    });
+    
+    return chords;
+  };
+
+  const chordOptions = generateChordOptions();
+
+  const insertChord = (chordName: string) => {
+    const chordElement = `<span class="chord" style="color: #3b82f6; font-weight: bold; margin-right: 8px;">[${chordName}]</span>`;
+    execCommand('insertHTML', chordElement);
+    setChordDialogOpen(false);
   };
 
   const formatText = (command: string) => {
@@ -397,16 +426,43 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           
           <div className="w-px h-6 bg-gray-300 mx-1" />
           
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={insertChord}
-            className="h-8 w-8 p-0"
-            title="Insert chord"
-          >
-            <Music className="h-4 w-4" />
-          </Button>
+          <Dialog open={chordDialogOpen} onOpenChange={setChordDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                title="Insert chord"
+              >
+                <Music className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{language === 'fr' ? 'Sélectionner un accord' : 'Select a Chord'}</DialogTitle>
+                <DialogDescription>
+                  {language === 'fr' 
+                    ? 'Choisissez un accord à insérer dans les paroles'
+                    : 'Choose a chord to insert into the lyrics'}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 mt-4">
+                {chordOptions.map((chord) => (
+                  <Button
+                    key={chord}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => insertChord(chord)}
+                    className="text-sm font-mono"
+                  >
+                    {chord}
+                  </Button>
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Editor */}
