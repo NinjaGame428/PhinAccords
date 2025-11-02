@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { createServerClient } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,54 +10,62 @@ export async function GET(request: NextRequest) {
     const maxLimit = Math.min(limit, 200);
     const offset = (page - 1) * maxLimit;
     
-    const songsData = await query(async (sql) => {
-      // Get total count
-      const countResult = await sql`
-        SELECT COUNT(*) as total
-        FROM songs
-      `;
-      const total = parseInt(countResult[0]?.total || '0');
+    const serverClient = createServerClient();
+    
+    // Get total count
+    const { count } = await serverClient
+      .from('songs')
+      .select('*', { count: 'exact', head: true });
 
-      // Fetch songs with artist info using LEFT JOIN
-      const songs = await sql`
-        SELECT 
-          s.*,
-          json_build_object(
-            'id', a.id,
-            'name', a.name,
-            'bio', a.bio,
-            'image_url', a.image_url
-          ) as artists
-        FROM songs s
-        LEFT JOIN artists a ON s.artist_id = a.id
-        ORDER BY s.created_at DESC
-        LIMIT ${maxLimit}
-        OFFSET ${offset}
-      `;
+    // Fetch songs with artist info
+    const { data: songs, error } = await serverClient
+      .from('songs')
+      .select(`
+        *,
+        artists:artist_id (
+          id,
+          name,
+          bio,
+          image_url
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + maxLimit - 1);
 
-      return { songs, total };
-    });
+    if (error) {
+      console.error('Error fetching songs:', error);
+      return NextResponse.json({ error: 'Failed to fetch songs' }, { status: 500 });
+    }
 
-    // Handle null artist_ids
-    const processedSongs = songsData.songs.map((song: any) => {
-      if (!song.artists && song.artist) {
-        song.artists = {
-          id: song.artist_id || null,
-          name: song.artist,
-          bio: null,
-          image_url: null
+    // Process songs to handle null artist_ids
+    const processedSongs = songs?.map((song: any) => {
+      const artist = Array.isArray(song.artists) ? song.artists[0] : song.artists;
+      
+      if (!artist && song.artist) {
+        return {
+          ...song,
+          artists: {
+            id: song.artist_id || null,
+            name: song.artist,
+            bio: null,
+            image_url: null
+          }
         };
       }
-      return song;
-    });
+      
+      return {
+        ...song,
+        artists: artist || null
+      };
+    }) || [];
 
     const response = NextResponse.json({ 
-      songs: processedSongs || [], 
+      songs: processedSongs, 
       pagination: {
         page,
         limit: maxLimit,
-        total: songsData.total || 0,
-        totalPages: Math.ceil((songsData.total || 0) / maxLimit)
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / maxLimit)
       }
     });
     
@@ -68,11 +76,6 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error: any) {
     console.error('Error in GET /api/songs:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
     return NextResponse.json({ 
       error: 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -116,82 +119,62 @@ export async function POST(request: NextRequest) {
 
     const trimmedTitle = title.trim();
     const trimmedArtistId = artist_id.trim();
+    const serverClient = createServerClient();
 
-    const songData = await query(async (sql) => {
-      // Fetch artist name
-      let artistName: string | null = null;
-      try {
-        const [artist] = await sql`
-          SELECT name
-          FROM artists
-          WHERE id = ${trimmedArtistId}
-        `;
-        if (artist) artistName = artist.name.trim();
-      } catch (error) {
-        console.warn('Could not fetch artist name:', error);
-      }
+    // Fetch artist name
+    const { data: artist } = await serverClient
+      .from('artists')
+      .select('name')
+      .eq('id', trimmedArtistId)
+      .single();
 
-      // Insert song
-      const [song] = await sql`
-        INSERT INTO songs (
-          title,
-          artist_id,
-          artist,
-          slug,
-          lyrics,
-          key_signature,
-          tempo,
-          chords,
-          rating,
-          downloads,
-          created_at,
-          updated_at
-        ) VALUES (
-          ${trimmedTitle},
-          ${trimmedArtistId},
-          ${artistName || null},
-          ${slug && slug.trim() ? slug.trim() : createSlug(trimmedTitle)},
-          ${lyrics !== undefined && lyrics !== null ? (typeof lyrics === 'string' ? lyrics.trim() : String(lyrics).trim()) : null},
-          ${(key_signature || key) && (key_signature || key).trim() !== '' ? (key_signature || key).trim() : null},
-          ${(tempo || bpm) !== null && (tempo || bpm) !== undefined && (tempo || bpm) !== '' ? (parseInt(String(tempo || bpm)) || null) : null},
-          ${chords ? (typeof chords === 'string' ? chords : JSON.stringify(chords)) : null},
-          0,
-          0,
-          NOW(),
-          NOW()
+    // Insert song
+    const { data: songData, error } = await serverClient
+      .from('songs')
+      .insert({
+        title: trimmedTitle,
+        artist_id: trimmedArtistId,
+        artist: artist?.name || null,
+        slug: slug && slug.trim() ? slug.trim() : createSlug(trimmedTitle),
+        lyrics: lyrics !== undefined && lyrics !== null ? (typeof lyrics === 'string' ? lyrics.trim() : String(lyrics).trim()) : null,
+        key_signature: (key_signature || key) && (key_signature || key).trim() !== '' ? (key_signature || key).trim() : null,
+        tempo: (tempo || bpm) !== null && (tempo || bpm) !== undefined && (tempo || bpm) !== '' ? (parseInt(String(tempo || bpm)) || null) : null,
+        chords: chords ? (typeof chords === 'string' ? JSON.parse(chords) : chords) : null,
+        rating: 0,
+        downloads: 0
+      })
+      .select(`
+        *,
+        artists:artist_id (
+          id,
+          name,
+          bio,
+          image_url
         )
-        RETURNING *
-      `;
+      `)
+      .single();
 
-      // Fetch artist info for response
-      const [artist] = await sql`
-        SELECT id, name, bio, image_url
-        FROM artists
-        WHERE id = ${trimmedArtistId}
-      `;
-
-      return {
-        ...song,
-        artists: artist || null
-      };
-    });
-
-    if (!songData) {
+    if (error || !songData) {
+      console.error('Error creating song:', error);
       return NextResponse.json({ 
-        error: 'Failed to create song: No data returned'
+        error: 'Failed to create song',
+        details: process.env.NODE_ENV === 'development' ? error?.message : undefined
       }, { status: 500 });
     }
 
-    if (!songData.artists && songData.artist) {
-      songData.artists = {
-        id: songData.artist_id || null,
-        name: songData.artist,
-        bio: null,
-        image_url: null
-      };
-    }
+    // Process artist data
+    const processedSong = {
+      ...songData,
+      artists: Array.isArray(songData.artists) ? songData.artists[0] : songData.artists || 
+        (songData.artist ? {
+          id: songData.artist_id || null,
+          name: songData.artist,
+          bio: null,
+          image_url: null
+        } : null)
+    };
 
-    const response = NextResponse.json({ song: songData }, { status: 201 });
+    const response = NextResponse.json({ song: processedSong }, { status: 201 });
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');

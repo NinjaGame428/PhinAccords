@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { createServerClient } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
-    const campaigns = await query(async (sql) => {
-      const results = await sql`
-        SELECT *
-        FROM email_campaigns
-        ORDER BY created_at DESC
-      `;
-      return results;
-    });
+    const serverClient = createServerClient();
+    const { data: campaigns, error } = await serverClient
+      .from('email_campaigns')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    return NextResponse.json({ campaigns }, { status: 200 });
+    if (error) {
+      console.error('Error fetching campaigns:', error);
+      return NextResponse.json({ error: 'Failed to fetch campaigns' }, { status: 500 });
+    }
+
+    return NextResponse.json({ campaigns: campaigns || [] }, { status: 200 });
   } catch (error) {
     console.error('Error fetching campaigns:', error);
     return NextResponse.json({ error: 'Failed to fetch campaigns' }, { status: 500 });
@@ -23,34 +25,32 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { name, subject, content, recipients, scheduledFor } = body;
+    const serverClient = createServerClient();
 
-    const campaign = await query(async (sql) => {
-      const [result] = await sql`
-        INSERT INTO email_campaigns (
-          name,
-          subject,
-          body,
-          recipient_type,
-          recipient_ids,
-          status,
-          scheduled_at,
-          created_at,
-          updated_at
-        ) VALUES (
-          ${name},
-          ${subject},
-          ${content},
-          ${recipients?.type || 'all'},
-          ${recipients?.ids ? recipients.ids : null},
-          'draft',
-          ${scheduledFor || null},
-          NOW(),
-          NOW()
-        )
-        RETURNING *
-      `;
-      return result;
-    });
+    const { data: campaign, error } = await serverClient
+      .from('email_campaigns')
+      .insert({
+        name,
+        subject,
+        content: content || null,
+        recipients: recipients?.ids || recipients || null,
+        status: 'draft',
+        scheduled_for: scheduledFor || null,
+        sent: 0,
+        opened: 0,
+        clicked: 0,
+        bounced: 0
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating campaign:', error);
+      return NextResponse.json({ 
+        error: 'Failed to create campaign',
+        details: error.message
+      }, { status: 500 });
+    }
 
     return NextResponse.json({ campaign }, { status: 201 });
   } catch (error: any) {

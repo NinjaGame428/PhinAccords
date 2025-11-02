@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { login } from '@/lib/auth';
+import { createServerClient } from '@/lib/supabase';
 import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
@@ -12,23 +12,51 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const result = await login(email, password);
+      const serverClient = createServerClient();
+      
+      // Sign in with Supabase Auth
+      const { data, error } = await serverClient.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password: password
+      });
 
-      if (!result) {
+      if (error || !data.user || !data.session) {
         return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
       }
 
-      // Set cookie
+      // Get user profile
+      const { data: profile } = await serverClient
+        .from('users')
+        .select('id, email, full_name, avatar_url, role')
+        .eq('id', data.user.id)
+        .single();
+
+      // Set cookies
       const cookieStore = await cookies();
-      cookieStore.set('auth-token', result.token, {
+      cookieStore.set('sb-access-token', data.session.access_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 60 * 60 * 24 * 7, // 7 days
         path: '/'
       });
+      cookieStore.set('sb-refresh-token', data.session.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        path: '/'
+      });
 
-      return NextResponse.json({ user: result.user }, { status: 200 });
+      const user = profile || {
+        id: data.user.id,
+        email: data.user.email!,
+        full_name: data.user.user_metadata?.full_name || null,
+        avatar_url: data.user.user_metadata?.avatar_url || null,
+        role: 'user' as const
+      };
+
+      return NextResponse.json({ user }, { status: 200 });
     } catch (error: any) {
       console.error('❌ Login error:', {
         message: error.message,

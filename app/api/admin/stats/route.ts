@@ -1,48 +1,37 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { createServerClient } from '@/lib/supabase';
 
 export async function GET() {
   try {
-    const stats = await query(async (sql) => {
-      // Fetch all counts in parallel
-      const [
-        songsResult,
-        artistsResult,
-        usersResult,
-        resourcesResult,
-        collectionsResult
-      ] = await Promise.all([
-        sql`SELECT COUNT(*) as total FROM songs`,
-        sql`SELECT COUNT(*) as total FROM artists`,
-        sql`SELECT COUNT(*) as total FROM users`,
-        sql`SELECT COUNT(*) as total FROM resources`,
-        sql`
-          SELECT COUNT(*) as total 
-          FROM information_schema.tables 
-          WHERE table_name = 'piano_chords'
-        `.then(() => sql`SELECT COUNT(*) as total FROM piano_chords`)
-          .catch(() => [{ total: 0 }])
-      ]);
+    const serverClient = createServerClient();
+    
+    // Fetch overview statistics
+    const [songsResult, artistsResult, usersResult, resourcesResult] = await Promise.all([
+      serverClient.from('songs').select('*', { count: 'exact', head: true }),
+      serverClient.from('artists').select('*', { count: 'exact', head: true }),
+      serverClient.from('users').select('*', { count: 'exact', head: true }),
+      serverClient.from('resources').select('*', { count: 'exact', head: true })
+    ]);
 
-      return {
-        totalSongs: parseInt(songsResult[0]?.total || '0'),
-        totalArtists: parseInt(artistsResult[0]?.total || '0'),
-        totalUsers: parseInt(usersResult[0]?.total || '0'),
-        totalResources: parseInt(resourcesResult[0]?.total || '0'),
-        collections: parseInt(collectionsResult[0]?.total || '0')
-      };
-    });
+    const totalSongs = songsResult.count || 0;
+    const totalArtists = artistsResult.count || 0;
+    const totalUsers = usersResult.count || 0;
+    const totalResources = resourcesResult.count || 0;
 
-    const activeUsers = stats.totalUsers; // Placeholder for actual active user logic
-
-    return NextResponse.json({ 
-      stats: {
-        ...stats,
-        activeUsers
+    return NextResponse.json({
+      overview: {
+        totalSongs,
+        totalArtists,
+        totalUsers,
+        totalResources,
+        totalCollections: 0 // Can be calculated separately if needed
       }
-    }, { status: 200 });
-  } catch (error) {
+    });
+  } catch (error: any) {
     console.error('Error fetching admin stats:', error);
-    return NextResponse.json({ error: 'Failed to fetch admin statistics' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    }, { status: 500 });
   }
 }

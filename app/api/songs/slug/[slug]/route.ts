@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { createServerClient } from '@/lib/supabase';
 
-// Helper function to create slug from title
 const createSlug = (title: string) => {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 };
@@ -13,93 +12,100 @@ export async function GET(
   try {
     const resolvedParams = await params;
     const slug = decodeURIComponent(resolvedParams.slug);
+    const serverClient = createServerClient();
     
-    const songData = await query(async (sql) => {
-      // First try to find by slug column
-      let songs = await sql`
-        SELECT 
-          s.*,
-          json_build_object(
-            'id', a.id,
-            'name', a.name,
-            'bio', a.bio,
-            'image_url', a.image_url
-          ) as artists
-        FROM songs s
-        LEFT JOIN artists a ON s.artist_id = a.id
-        WHERE s.slug = ${slug}
-        LIMIT 1
-      `;
+    // First try to find by slug column
+    let { data: songData, error } = await serverClient
+      .from('songs')
+      .select(`
+        *,
+        artists:artist_id (
+          id,
+          name,
+          bio,
+          image_url
+        )
+      `)
+      .eq('slug', slug)
+      .single();
 
-      if (songs.length === 0) {
-        // Try to match by title (for songs without slug or with different slug format)
-        const titleFromSlug = slug
-          .split('-')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
-        
-        songs = await sql`
-          SELECT 
-            s.*,
-            json_build_object(
-              'id', a.id,
-              'name', a.name,
-              'bio', a.bio,
-              'image_url', a.image_url
-            ) as artists
-          FROM songs s
-          LEFT JOIN artists a ON s.artist_id = a.id
-          WHERE s.title ILIKE ${`%${titleFromSlug}%`}
-          LIMIT 1
-        `;
+    // If not found by slug, try by title
+    if (error || !songData) {
+      const titleFromSlug = slug
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      
+      const titleResult = await serverClient
+        .from('songs')
+        .select(`
+          *,
+          artists:artist_id (
+            id,
+            name,
+            bio,
+            image_url
+          )
+        `)
+        .ilike('title', `%${titleFromSlug}%`)
+        .limit(1)
+        .single();
+      
+      if (!titleResult.error && titleResult.data) {
+        songData = titleResult.data;
+        error = null;
       }
+    }
 
-      // If still not found, check if slug is actually a UUID (backward compatibility)
-      if (songs.length === 0) {
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
-        if (isUUID) {
-          songs = await sql`
-            SELECT 
-              s.*,
-              json_build_object(
-                'id', a.id,
-                'name', a.name,
-                'bio', a.bio,
-                'image_url', a.image_url
-              ) as artists
-            FROM songs s
-            LEFT JOIN artists a ON s.artist_id = a.id
-            WHERE s.id = ${slug}
-            LIMIT 1
-          `;
+    // If still not found, check if slug is a UUID
+    if (error || !songData) {
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+      if (isUUID) {
+        const uuidResult = await serverClient
+          .from('songs')
+          .select(`
+            *,
+            artists:artist_id (
+              id,
+              name,
+              bio,
+              image_url
+            )
+          `)
+          .eq('id', slug)
+          .single();
+        
+        if (!uuidResult.error && uuidResult.data) {
+          songData = uuidResult.data;
+          error = null;
         }
       }
+    }
 
-      return songs[0] || null;
-    });
-
-    if (!songData) {
+    if (error || !songData) {
       return NextResponse.json({ error: 'Song not found' }, { status: 404 });
     }
 
-    // Handle null artist_id - ensure artist info is populated from text field if needed
-    if (songData && !songData.artists && songData.artist) {
-      songData.artists = {
-        id: songData.artist_id || null,
-        name: songData.artist,
-        bio: null,
-        image_url: null
-      };
-    }
+    // Process artist data
+    const processedSong = {
+      ...songData,
+      artists: Array.isArray(songData.artists) ? songData.artists[0] : songData.artists || 
+        (songData.artist ? {
+          id: songData.artist_id || null,
+          name: songData.artist,
+          bio: null,
+          image_url: null
+        } : null)
+    };
 
-    const response = NextResponse.json({ song: songData });
-    // Add headers to prevent stale caching
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    response.headers.set('Pragma', 'no-cache');
-    response.headers.set('Expires', '0');
+    const response = NextResponse.json({ song: processedSong });
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in GET /api/songs/slug/[slug]:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    }, { status: 500 });
   }
 }

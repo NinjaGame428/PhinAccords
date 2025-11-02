@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { createServerClient } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +22,27 @@ export const PATCH = async (request: NextRequest) => {
       );
     }
 
+    const serverClient = createServerClient();
+
+    if (action === 'delete') {
+      const { error } = await serverClient
+        .from('users')
+        .delete()
+        .in('id', userIds);
+
+      if (error) {
+        return NextResponse.json(
+          { error: 'Failed to delete users' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Successfully deleted ${userIds.length} users`,
+      });
+    }
+
     let updateData: any = { updated_at: new Date().toISOString() };
 
     switch (action) {
@@ -37,18 +58,6 @@ export const PATCH = async (request: NextRequest) => {
       case 'unban':
         updateData.status = 'active';
         break;
-      case 'delete':
-        await query(async (sql) => {
-          await sql`
-            DELETE FROM users
-            WHERE id = ANY(${userIds})
-          `;
-        });
-
-        return NextResponse.json({
-          success: true,
-          message: `Successfully deleted ${userIds.length} users`,
-        });
       case 'make_admin':
         updateData.role = 'admin';
         break;
@@ -65,21 +74,17 @@ export const PATCH = async (request: NextRequest) => {
         );
     }
 
-    await query(async (sql) => {
-      const keys = Object.keys(updateData);
-      const values = Object.values(updateData);
-      
-      if (keys.length === 0) {
-        return;
-      }
+    const { error } = await serverClient
+      .from('users')
+      .update(updateData)
+      .in('id', userIds);
 
-      const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
-      await sql.unsafe(`
-        UPDATE users
-        SET ${setClause}
-        WHERE id = ANY($${keys.length + 1}::uuid[])
-      `, [...values, userIds]);
-    });
+    if (error) {
+      return NextResponse.json(
+        { error: 'Failed to update users' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -106,12 +111,18 @@ export const DELETE = async (request: NextRequest) => {
       );
     }
 
-    await query(async (sql) => {
-      await sql`
-        DELETE FROM users
-        WHERE id = ANY(${userIds})
-      `;
-    });
+    const serverClient = createServerClient();
+    const { error } = await serverClient
+      .from('users')
+      .delete()
+      .in('id', userIds);
+
+    if (error) {
+      return NextResponse.json(
+        { error: 'Failed to delete users' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

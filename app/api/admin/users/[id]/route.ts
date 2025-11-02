@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { createServerClient } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,17 +10,15 @@ export const GET = async (
   try {
     const resolvedParams = await params;
     const userId = resolvedParams.id;
+    const serverClient = createServerClient();
 
-    const user = await query(async (sql) => {
-      const [result] = await sql`
-        SELECT *
-        FROM users
-        WHERE id = ${userId}
-      `;
-      return result;
-    });
+    const { data: user, error } = await serverClient
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
 
-    if (!user) {
+    if (error || !user) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -46,31 +44,32 @@ export const PATCH = async (
     const userId = resolvedParams.id;
     const body = await request.json();
     const { action, ...updates } = body;
+    const serverClient = createServerClient();
 
-    let updateData: any = {};
+    let updateData: any = { updated_at: new Date().toISOString() };
 
     if (action) {
       switch (action) {
         case 'activate':
-          updateData = { status: 'active' };
+          updateData.status = 'active';
           break;
         case 'deactivate':
-          updateData = { status: 'inactive' };
+          updateData.status = 'inactive';
           break;
         case 'ban':
-          updateData = { status: 'banned' };
+          updateData.status = 'banned';
           break;
         case 'unban':
-          updateData = { status: 'active' };
+          updateData.status = 'active';
           break;
         case 'make_admin':
-          updateData = { role: 'admin' };
+          updateData.role = 'admin';
           break;
         case 'make_moderator':
-          updateData = { role: 'moderator' };
+          updateData.role = 'moderator';
           break;
         case 'make_user':
-          updateData = { role: 'user' };
+          updateData.role = 'user';
           break;
         default:
           return NextResponse.json(
@@ -79,26 +78,20 @@ export const PATCH = async (
           );
       }
     } else {
-      updateData = updates;
+      updateData = { ...updates, updated_at: new Date().toISOString() };
     }
 
-    updateData.updated_at = new Date().toISOString();
+    const { error } = await serverClient
+      .from('users')
+      .update(updateData)
+      .eq('id', userId);
 
-    await query(async (sql) => {
-      const keys = Object.keys(updateData);
-      const values = Object.values(updateData);
-      
-      if (keys.length === 0) {
-        return;
-      }
-
-      const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
-      await sql.unsafe(`
-        UPDATE users
-        SET ${setClause}
-        WHERE id = $${keys.length + 1}
-      `, [...values, userId]);
-    });
+    if (error) {
+      return NextResponse.json(
+        { error: 'Failed to update user' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -120,13 +113,19 @@ export const DELETE = async (
   try {
     const resolvedParams = await params;
     const userId = resolvedParams.id;
+    const serverClient = createServerClient();
 
-    await query(async (sql) => {
-      await sql`
-        DELETE FROM users
-        WHERE id = ${userId}
-      `;
-    });
+    const { error } = await serverClient
+      .from('users')
+      .delete()
+      .eq('id', userId);
+
+    if (error) {
+      return NextResponse.json(
+        { error: 'Failed to delete user' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

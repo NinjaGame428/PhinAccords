@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { createServerClient } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
 export const GET = async (request: NextRequest) => {
   try {
-    const users = await query(async (sql) => {
-      const results = await sql`
-        SELECT *
-        FROM users
-        ORDER BY created_at DESC
-      `;
-      return results;
-    });
+    const serverClient = createServerClient();
+    const { data: users, error } = await serverClient
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching users:', error);
+      return NextResponse.json({ users: [] }, { status: 200 });
+    }
 
     const transformedUsers = users?.map((user: any) => ({
       id: user.id,
@@ -24,7 +26,7 @@ export const GET = async (request: NextRequest) => {
       status: user.status || 'active',
       joinDate: user.created_at,
       lastLogin: user.last_login || user.created_at,
-      loginCount: 0, // Calculate from sessions if needed
+      loginCount: 0,
       location: {
         country: 'Unknown',
         city: 'Unknown',
@@ -52,7 +54,7 @@ export const GET = async (request: NextRequest) => {
     })) || [];
 
     return NextResponse.json({
-      users: transformedUsers.length > 0 ? transformedUsers : [],
+      users: transformedUsers,
     });
   } catch (error) {
     console.error('Error in users API:', error);

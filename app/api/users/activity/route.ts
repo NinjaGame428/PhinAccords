@@ -1,7 +1,41 @@
-import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@/lib/supabase';
 
-export async function POST(request: Request) {
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    const admin = searchParams.get('admin') === 'true';
+    const serverClient = createServerClient();
+
+    let query = serverClient
+      .from('user_activity')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data: activities, error } = await query;
+
+    if (error) {
+      console.error('Error fetching activities:', error);
+      return NextResponse.json({ activities: [] }, { status: 200 });
+    }
+
+    return NextResponse.json({ activities: activities || [] });
+  } catch (error: any) {
+    console.error('Error in GET /api/users/activity:', error);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      activities: []
+    }, { status: 200 });
+  }
+}
+
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
@@ -17,29 +51,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User ID and activity type are required' }, { status: 400 });
     }
 
-    const activity = await query(async (sql) => {
-      const [result] = await sql`
-        INSERT INTO user_activities (
-          user_id,
-          activity_type,
-          description,
-          metadata,
-          page,
-          action,
-          created_at
-        ) VALUES (
-          ${userId},
-          ${activityType},
-          ${description || null},
-          ${metadata ? JSON.stringify(metadata) : null},
-          ${page || null},
-          ${action || null},
-          NOW()
-        )
-        RETURNING *
-      `;
-      return result;
-    });
+    const serverClient = createServerClient();
+    const { data: activity, error } = await serverClient
+      .from('user_activity')
+      .insert({
+        user_id: userId,
+        activity_type: activityType,
+        description: description || null,
+        activity_data: metadata || null,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating activity:', error);
+      return NextResponse.json({ 
+        error: 'Failed to create activity',
+        details: error.message
+      }, { status: 500 });
+    }
 
     return NextResponse.json({ activity });
   } catch (error: any) {

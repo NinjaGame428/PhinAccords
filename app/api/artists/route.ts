@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { createServerClient } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,31 +11,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Artist name is required' }, { status: 400 });
     }
 
-    const artistData = await query(async (sql) => {
-      const [artist] = await sql`
-        INSERT INTO artists (
-          name,
-          bio,
-          image_url,
-          website,
-          created_at,
-          updated_at
-        ) VALUES (
-          ${name.trim()},
-          ${bio || null},
-          ${image_url || null},
-          ${website || null},
-          NOW(),
-          NOW()
-        )
-        RETURNING id, name, bio, image_url, website, created_at, updated_at
-      `;
+    const serverClient = createServerClient();
+    const { data: artistData, error } = await serverClient
+      .from('artists')
+      .insert({
+        name: name.trim(),
+        bio: bio || null,
+        image_url: image_url || null,
+        website: website || null
+      })
+      .select()
+      .single();
 
-      return artist;
-    });
-
-    if (!artistData) {
-      return NextResponse.json({ error: 'Failed to create artist: No data returned' }, { status: 500 });
+    if (error || !artistData) {
+      console.error('❌ Error creating artist:', error);
+      return NextResponse.json({ 
+        error: 'Failed to create artist',
+        details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+      }, { status: 500 });
     }
 
     return NextResponse.json({ artist: artistData }, { status: 201 });
@@ -56,41 +49,42 @@ export async function GET(request: NextRequest) {
     // Parse query parameters for pagination
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '100'); // Default 100, max 500
+    const limit = parseInt(searchParams.get('limit') || '100');
     const maxLimit = Math.min(limit, 500);
     const offset = (page - 1) * maxLimit;
     
-    const artistsData = await query(async (sql) => {
-      // Get total count
-      const countResult = await sql`
-        SELECT COUNT(*) as total
-        FROM artists
-      `;
-      const total = parseInt(countResult[0]?.total || '0');
+    const serverClient = createServerClient();
+    
+    // Get total count
+    const { count } = await serverClient
+      .from('artists')
+      .select('*', { count: 'exact', head: true });
 
-      // Fetch artists (excluding bio for list view)
-      const artists = await sql`
-        SELECT id, name, image_url, website, created_at, updated_at
-        FROM artists
-        ORDER BY name ASC
-        LIMIT ${maxLimit}
-        OFFSET ${offset}
-      `;
+    // Fetch artists
+    const { data: artists, error } = await serverClient
+      .from('artists')
+      .select('id, name, image_url, website, created_at, updated_at')
+      .order('name', { ascending: true })
+      .range(offset, offset + maxLimit - 1);
 
-      return { artists, total };
-    });
+    if (error) {
+      console.error('❌ Error in GET /api/artists:', error);
+      return NextResponse.json({ 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      }, { status: 500 });
+    }
 
     const response = NextResponse.json({ 
-      artists: artistsData.artists || [],
+      artists: artists || [],
       pagination: {
         page,
         limit: maxLimit,
-        total: artistsData.total || 0,
-        totalPages: Math.ceil((artistsData.total || 0) / maxLimit)
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / maxLimit)
       }
     });
     
-    // Aggressive caching - artists change less frequently
     response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     
     return response;
