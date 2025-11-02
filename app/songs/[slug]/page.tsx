@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import PianoChordDiagram from '@/components/piano-chord-diagram';
 
 const SongDetailsPage = () => {
   const params = useParams();
@@ -37,6 +38,7 @@ const SongDetailsPage = () => {
   const [selectedChord, setSelectedChord] = useState<{ name: string; position: { x: number; y: number } } | null>(null);
   const [transposeKey, setTransposeKey] = useState<string | null>(null);
   const [transposedLyrics, setTransposedLyrics] = useState<string | null>(null);
+  const [uniqueChords, setUniqueChords] = useState<Set<string>>(new Set());
 
   // Helper function to create slug from title
   const createSlug = (title: string) => {
@@ -128,6 +130,39 @@ const SongDetailsPage = () => {
     });
     
     setTransposedLyrics(transposedHtml);
+    // Extract chords from transposed lyrics
+    extractChords(transposedHtml);
+  };
+
+  // Extract unique chords from lyrics
+  const extractChords = (lyricsHtml: string) => {
+    if (!lyricsHtml) return;
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = lyricsHtml;
+    
+    const chordSet = new Set<string>();
+    
+    // Find all chord spans
+    const chordElements = tempDiv.querySelectorAll('.chord');
+    chordElements.forEach((element) => {
+      const chordText = element.textContent || '';
+      const chordName = chordText.replace(/\[|\]/g, '').trim();
+      if (chordName) {
+        chordSet.add(chordName);
+      }
+    });
+    
+    // Also find standalone chord patterns
+    const chordPattern = /\[([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|7|9|11|13)?(?:\/[A-G][#b]?)?)\]/gi;
+    let match;
+    while ((match = chordPattern.exec(lyricsHtml)) !== null) {
+      if (!match[0].includes('class="chord"')) {
+        chordSet.add(match[1]);
+      }
+    }
+    
+    setUniqueChords(chordSet);
   };
 
   // Reset transpose when song changes
@@ -135,6 +170,7 @@ const SongDetailsPage = () => {
     if (song) {
       setTransposeKey(null);
       setTransposedLyrics(null);
+      extractChords(song.lyrics);
     }
   }, [song?.id]);
 
@@ -558,15 +594,24 @@ const SongDetailsPage = () => {
                       <Select
                         value={transposeKey || song.key_signature || 'C'}
                         onValueChange={(newKey) => {
-                          setTransposeKey(newKey);
-                          transposeChordsInLyrics(newKey);
+                          const originalKey = song.key_signature || 'C';
+                          if (newKey === originalKey) {
+                            // Reset to original
+                            setTransposeKey(null);
+                            setTransposedLyrics(null);
+                            extractChords(song.lyrics); // Reset chords
+                          } else {
+                            // Transpose to new key
+                            setTransposeKey(newKey);
+                            transposeChordsInLyrics(newKey);
+                          }
                         }}
                       >
                         <SelectTrigger className="w-32">
-                          <SelectValue />
+                          <SelectValue placeholder="Select key" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={song.key_signature || 'C'}>Original</SelectItem>
+                          <SelectItem value={song.key_signature || 'C'}>Original ({song.key_signature || 'C'})</SelectItem>
                           <SelectItem value="C">C</SelectItem>
                           <SelectItem value="C#">C#</SelectItem>
                           <SelectItem value="Db">Db</SelectItem>
@@ -770,6 +815,56 @@ const SongDetailsPage = () => {
                       position={selectedChord.position}
                       onClose={() => setSelectedChord(null)}
                     />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Chord Preview Panel - Right Side */}
+            <div className="lg:col-span-1">
+              <Card className="sticky top-20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Piano className="h-5 w-5" />
+                    {t('songDetail.chords')} Preview
+                  </CardTitle>
+                  <CardDescription>
+                    {transposeKey 
+                      ? `Transposed to ${transposeKey}` 
+                      : `Original Key: ${song.key_signature || 'C'}`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {uniqueChords.size > 0 ? (
+                    <div className="space-y-4 max-h-[calc(100vh-250px)] overflow-y-auto">
+                      {Array.from(uniqueChords).sort((a, b) => {
+                        // Sort chords in musical order
+                        const musicalOrder = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
+                        const aRoot = a.match(/^([A-G][#b]?)/)?.[1] || '';
+                        const bRoot = b.match(/^([A-G][#b]?)/)?.[1] || '';
+                        const aIndex = musicalOrder.indexOf(aRoot);
+                        const bIndex = musicalOrder.indexOf(bRoot);
+                        if (aIndex !== -1 && bIndex !== -1) {
+                          if (aIndex !== bIndex) return aIndex - bIndex;
+                        }
+                        return a.localeCompare(b);
+                      }).map((chordName) => (
+                        <div key={chordName} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                          <PianoChordDiagram
+                            chordName={chordName}
+                            notes={[]}
+                            fingers={[]}
+                            description=""
+                            difficulty="Medium"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Piano className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No chords found</p>
+                    </div>
                   )}
                 </CardContent>
               </Card>
