@@ -172,9 +172,9 @@ const SongList = () => {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Header with count and view toggle */}
-      <div className="flex justify-between items-center mb-6 px-2">
+      <div className="flex justify-between items-center mb-6">
         <div className="text-sm text-muted-foreground">
           {popularSongs.length} {t('songs.songsFound')}
         </div>

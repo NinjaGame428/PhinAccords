@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import {
   Dialog,
   DialogContent,
@@ -852,8 +853,10 @@ export const SimpleSongEditor: React.FC<SimpleSongEditorProps> = ({ songSlug, so
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                <strong>Formatting Guide:</strong>
+                <strong>Text Editor Features:</strong>
                 <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                  <li>Use the toolbar to format text (bold, italic, underline)</li>
+                  <li>Click the Music icon to insert chord markers</li>
                   <li>Use <code>[Section Name]</code> for sections (e.g., [Verse 1], [Chorus])</li>
                   <li>Write chords on their own line (e.g., C G Am F)</li>
                   <li>Use spaces to align chords with lyrics</li>
@@ -862,17 +865,17 @@ export const SimpleSongEditor: React.FC<SimpleSongEditorProps> = ({ songSlug, so
               </AlertDescription>
             </Alert>
 
-            <Textarea
-              value={songData.lyrics}
-              onChange={(e) => setSongData({ ...songData, lyrics: e.target.value })}
-              placeholder={`[Verse 1]\nC        G        Am       F\nAmazing grace, how sweet the sound\n\n[Chorus]\nC        G        Am       F\nHow great is our God`}
-              rows={25}
-              className="font-mono text-sm resize-y"
-              style={{ minHeight: '400px' }}
-            />
+            <div className="mt-4">
+              <RichTextEditor
+                content={songData.lyrics || ''}
+                onChange={(content) => setSongData({ ...songData, lyrics: content })}
+                placeholder={`[Verse 1]\nC        G        Am       F\nAmazing grace, how sweet the sound\n\n[Chorus]\nC        G        Am       F\nHow great is our God`}
+                className="min-h-[500px]"
+              />
+            </div>
 
-            <p className="text-xs text-muted-foreground">
-              Changes will be visible on the public page after saving
+            <p className="text-xs text-muted-foreground mt-4">
+              Changes will be visible on the public page after saving. Use the toolbar above to format your lyrics and insert chord markers.
             </p>
           </CardContent>
         </Card>
