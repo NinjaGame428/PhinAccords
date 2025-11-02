@@ -16,9 +16,21 @@ import {
   Undo,
   Redo,
   Type,
-  Music
+  Music,
+  Minus,
+  Plus,
+  Palette,
+  Type as TypeIcon,
+  AlignJustify
 } from 'lucide-react';
-import { ChordTooltip } from './chord-tooltip';
+import { PianoChordTooltip } from './piano-chord-tooltip';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface RichTextEditorProps {
   content: string;
@@ -36,6 +48,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [selectedChord, setSelectedChord] = useState<{ name: string; position: { x: number; y: number } } | null>(null);
+  const [fontSize, setFontSize] = useState(14);
+  const [fontFamily, setFontFamily] = useState('Arial');
+  const [textColor, setTextColor] = useState('#000000');
 
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== content) {
@@ -126,6 +141,48 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   const insertList = (ordered: boolean = false) => {
     execCommand(ordered ? 'insertOrderedList' : 'insertUnorderedList');
+  };
+
+  const setFontSizeCommand = (size: number) => {
+    execCommand('fontSize', '3'); // Base size
+    if (editorRef.current) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.style.fontSize = `${size}px`;
+        try {
+          range.surroundContents(span);
+        } catch (e) {
+          // If surroundContents fails, use insertNode
+          span.appendChild(range.extractContents());
+          range.insertNode(span);
+        }
+        handleInput();
+      }
+    }
+  };
+
+  const increaseFontSize = () => {
+    const newSize = fontSize + 2;
+    setFontSize(newSize);
+    setFontSizeCommand(newSize);
+  };
+
+  const decreaseFontSize = () => {
+    const newSize = Math.max(8, fontSize - 2);
+    setFontSize(newSize);
+    setFontSizeCommand(newSize);
+  };
+
+  const setFontFamilyCommand = (family: string) => {
+    execCommand('fontName', family);
+    setFontFamily(family);
+  };
+
+  const setTextColorCommand = (color: string) => {
+    execCommand('foreColor', color);
+    setTextColor(color);
   };
 
   const undo = () => {
@@ -243,12 +300,110 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           
           <div className="w-px h-6 bg-gray-300 mx-1" />
           
+          {/* Font Size Controls */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={decreaseFontSize}
+            className="h-8 w-8 p-0"
+            title="Decrease font size"
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <Select
+            value={fontSize.toString()}
+            onValueChange={(value) => {
+              const size = parseInt(value);
+              setFontSize(size);
+              setFontSizeCommand(size);
+            }}
+          >
+            <SelectTrigger className="h-8 w-16 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72].map((size) => (
+                <SelectItem key={size} value={size.toString()}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={increaseFontSize}
+            className="h-8 w-8 p-0"
+            title="Increase font size"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+          
+          <div className="w-px h-6 bg-gray-300 mx-1" />
+          
+          {/* Font Family */}
+          <Select
+            value={fontFamily}
+            onValueChange={setFontFamilyCommand}
+          >
+            <SelectTrigger className="h-8 w-32 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Arial">Arial</SelectItem>
+              <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+              <SelectItem value="Courier New">Courier New</SelectItem>
+              <SelectItem value="Georgia">Georgia</SelectItem>
+              <SelectItem value="Verdana">Verdana</SelectItem>
+              <SelectItem value="Helvetica">Helvetica</SelectItem>
+              <SelectItem value="Comic Sans MS">Comic Sans MS</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <div className="w-px h-6 bg-gray-300 mx-1" />
+          
+          {/* Text Color */}
+          <div className="relative">
+            <input
+              type="color"
+              value={textColor}
+              onChange={(e) => {
+                const color = e.target.value;
+                setTextColor(color);
+                setTextColorCommand(color);
+              }}
+              className="h-8 w-8 cursor-pointer opacity-0 absolute"
+              title="Text color"
+            />
+            <div className="h-8 w-8 border border-gray-300 rounded flex items-center justify-center bg-white">
+              <Palette className="h-4 w-4" />
+            </div>
+          </div>
+          
+          <div className="w-px h-6 bg-gray-300 mx-1" />
+          
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setAlignment('Justify')}
+            className="h-8 w-8 p-0"
+            title="Justify"
+          >
+            <AlignJustify className="h-4 w-4" />
+          </Button>
+          
+          <div className="w-px h-6 bg-gray-300 mx-1" />
+          
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={insertChord}
             className="h-8 w-8 p-0"
+            title="Insert chord"
           >
             <Music className="h-4 w-4" />
           </Button>
@@ -272,9 +427,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           } as React.CSSProperties}
         />
         
-        {/* Chord Diagram Tooltip */}
+        {/* Piano Chord Diagram Tooltip */}
         {selectedChord && (
-          <ChordTooltip
+          <PianoChordTooltip
             chordName={selectedChord.name}
             position={selectedChord.position}
             onClose={() => setSelectedChord(null)}

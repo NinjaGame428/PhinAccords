@@ -12,6 +12,7 @@ import Footer from '@/components/footer';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getTranslatedRoute } from '@/lib/url-translations';
+import { PianoChordTooltip } from '@/components/ui/piano-chord-tooltip';
 
 const SongDetailsPage = () => {
   const params = useParams();
@@ -25,6 +26,7 @@ const SongDetailsPage = () => {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [selectedChord, setSelectedChord] = useState<{ name: string; position: { x: number; y: number } } | null>(null);
 
   // Helper function to create slug from title
   const createSlug = (title: string) => {
@@ -493,9 +495,67 @@ const SongDetailsPage = () => {
                                 </div>
                               );
                             } else if (isChordLine) {
+                              // Parse chord names from the line
+                              const chordPattern = /([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|7|9|11|13)?(?:\/[A-G][#b]?)?)/gi;
+                              const chords: string[] = [];
+                              const parts: Array<{ text: string; isChord: boolean }> = [];
+                              let lastIndex = 0;
+                              let match;
+                              
+                              while ((match = chordPattern.exec(line)) !== null) {
+                                // Add text before chord
+                                if (match.index > lastIndex) {
+                                  parts.push({ text: line.substring(lastIndex, match.index), isChord: false });
+                                }
+                                // Add chord
+                                const chordName = match[0];
+                                chords.push(chordName);
+                                parts.push({ text: chordName, isChord: true });
+                                lastIndex = match.index + match[0].length;
+                              }
+                              
+                              // Add remaining text
+                              if (lastIndex < line.length) {
+                                parts.push({ text: line.substring(lastIndex), isChord: false });
+                              }
+                              
                               return (
-                                <div key={index} className="text-blue-600 dark:text-blue-400 font-bold tracking-wide">
-                                  {line}
+                                <div 
+                                  key={index} 
+                                  className="text-blue-600 dark:text-blue-400 font-bold tracking-wide cursor-default"
+                                  onClick={(e) => {
+                                    // Handle chord click
+                                    const target = e.target as HTMLElement;
+                                    if (target.classList.contains('chord-clickable')) {
+                                      const chordName = target.textContent?.trim() || '';
+                                      const rect = target.getBoundingClientRect();
+                                      setSelectedChord({
+                                        name: chordName,
+                                        position: {
+                                          x: rect.left + rect.width / 2,
+                                          y: rect.bottom + 10
+                                        }
+                                      });
+                                    }
+                                  }}
+                                >
+                                  {parts.length > 0 ? (
+                                    parts.map((part, partIndex) => (
+                                      part.isChord ? (
+                                        <span
+                                          key={partIndex}
+                                          className="chord-clickable hover:bg-blue-100 dark:hover:bg-blue-900 px-1 rounded cursor-pointer transition-colors"
+                                          title={`Click to view ${part.text} piano chord`}
+                                        >
+                                          {part.text}
+                                        </span>
+                                      ) : (
+                                        <span key={partIndex}>{part.text}</span>
+                                      )
+                                    ))
+                                  ) : (
+                                    line
+                                  )}
                                 </div>
                               );
                             } else if (line.trim() === '') {
