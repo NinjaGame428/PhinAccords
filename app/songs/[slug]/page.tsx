@@ -473,6 +473,21 @@ const SongDetailsPage = () => {
                       {/* Render lyrics with proper formatting */}
                       <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700">
                         <div 
+                          ref={(el) => {
+                            // Process links after rendering to ensure external links open in new tab
+                            if (el) {
+                              const links = el.querySelectorAll('a');
+                              links.forEach((link) => {
+                                const href = link.getAttribute('href');
+                                if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+                                  if (!link.hasAttribute('target')) {
+                                    link.setAttribute('target', '_blank');
+                                    link.setAttribute('rel', 'noopener noreferrer');
+                                  }
+                                }
+                              });
+                            }
+                          }}
                           className="font-mono text-base leading-loose whitespace-pre-wrap prose prose-sm max-w-none"
                           dangerouslySetInnerHTML={{ __html: song.lyrics }}
                           onClick={(e) => {
