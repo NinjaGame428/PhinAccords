@@ -40,10 +40,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ artist: artistData }, { status: 201 });
   } catch (error: any) {
-    console.error('Error creating artist:', error);
+    console.error('❌ Error creating artist:', {
+      message: error.message,
+      stack: error.stack
+    });
     return NextResponse.json({ 
       error: 'Failed to create artist', 
-      details: error.message
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     }, { status: 500 });
   }
 }
@@ -91,8 +94,14 @@ export async function GET(request: NextRequest) {
     response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     
     return response;
-  } catch (error) {
-    console.error('Error in GET /api/artists:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('❌ Error in GET /api/artists:', {
+      message: error.message,
+      stack: error.stack
+    });
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    }, { status: 500 });
   }
 }

@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (!user) {
+        console.error('❌ createUser returned null');
         return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
       }
 
@@ -42,20 +43,29 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ user }, { status: 201 });
     } catch (error: any) {
-      console.error('Registration error:', error);
-      if (error.message && error.message.includes('already exists')) {
+      console.error('❌ Registration error:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      
+      if (error.message && (error.message.includes('already exists') || error.message.includes('unique constraint'))) {
         return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
       }
+      
       return NextResponse.json({ 
         error: 'Failed to create user',
-        details: error.message 
+        details: process.env.NODE_ENV === 'development' ? error.message : 'Database error occurred'
       }, { status: 500 });
     }
   } catch (error: any) {
-    console.error('Registration error:', error);
+    console.error('❌ Registration request error:', {
+      message: error.message,
+      stack: error.stack
+    });
     return NextResponse.json({ 
       error: 'Internal server error',
-      details: error.message 
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     }, { status: 500 });
   }
 }

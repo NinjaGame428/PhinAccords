@@ -66,9 +66,17 @@ export async function GET(request: NextRequest) {
     response.headers.set('Expires', '0');
     
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in GET /api/songs:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    }, { status: 500 });
   }
 }
 
@@ -193,7 +201,7 @@ export async function POST(request: NextRequest) {
     console.error('Error creating song:', error);
     return NextResponse.json({ 
       error: 'Internal server error',
-      details: error.message || 'An unexpected error occurred'
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     }, { status: 500 });
   }
 }

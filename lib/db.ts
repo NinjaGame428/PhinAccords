@@ -2,28 +2,42 @@ import postgres, { Sql } from 'postgres';
 
 type PostgresClient = Sql<{}>;
 
+let dbInstance: PostgresClient | null = null;
+
 // Function to create PostgreSQL client for Neon
 const createDbClient = (): PostgresClient | null => {
+  // Return existing instance if available
+  if (dbInstance) {
+    return dbInstance;
+  }
+
   // Try NEON_DATABASE_URL first, then DATABASE_URL
   const databaseUrl = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
 
   if (!databaseUrl) {
-    console.error('Database URL not found. Please set NEON_DATABASE_URL or DATABASE_URL environment variable.');
+    console.error('[DB] ❌ Database URL not found. Please set NEON_DATABASE_URL or DATABASE_URL environment variable.');
     return null;
   }
 
   try {
+    console.log('[DB] 🔌 Creating database connection...');
+    
     // Create connection with optimized settings for serverless
     const sql = postgres(databaseUrl, {
       max: 1, // Limit connections for serverless
       idle_timeout: 20,
       connect_timeout: 10,
-      ssl: 'require'
+      ssl: 'require',
+      transform: {
+        undefined: null
+      }
     });
     
+    dbInstance = sql;
+    console.log('[DB] ✅ Database client created successfully');
     return sql;
-  } catch (error) {
-    console.error('Failed to create Neon database client:', error);
+  } catch (error: any) {
+    console.error('[DB] ❌ Failed to create Neon database client:', error.message);
     return null;
   }
 };
@@ -34,18 +48,35 @@ const db = createDbClient();
 // Helper function to safely execute queries
 export const query = async <T = any>(queryFn: (sql: PostgresClient) => Promise<T>): Promise<T> => {
   if (!db) {
-    throw new Error('Database connection not available. Please check your NEON_DATABASE_URL or DATABASE_URL environment variable.');
+    const error = new Error('Database connection not available. Please check your NEON_DATABASE_URL or DATABASE_URL environment variable.');
+    console.error('[DB] ❌', error.message);
+    throw error;
   }
   try {
     return await queryFn(db);
   } catch (error: any) {
-    console.error('Database query error:', error);
+    console.error('[DB] ❌ Query error:', {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      hint: error.hint,
+      position: error.position
+    });
+    
     // Provide more helpful error messages
     if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
-      throw new Error('Database table does not exist. Please run the migration script in Neon SQL Editor.');
+      const tableMatch = error.message.match(/relation "([^"]+)"/);
+      const tableName = tableMatch ? tableMatch[1] : 'unknown';
+      throw new Error(`Database table "${tableName}" does not exist. Please run the migration script in Neon SQL Editor.`);
     }
-    if (error.message?.includes('connection')) {
-      throw new Error('Database connection failed. Please check your connection string.');
+    if (error.message?.includes('connection') || error.message?.includes('ECONNREFUSED')) {
+      throw new Error('Database connection failed. Please check your connection string and network connectivity.');
+    }
+    if (error.message?.includes('timeout') || error.message?.includes('ETIMEDOUT')) {
+      throw new Error('Database connection timed out. Please try again.');
+    }
+    if (error.message?.includes('password') || error.message?.includes('authentication')) {
+      throw new Error('Database authentication failed. Please check your connection credentials.');
     }
     throw error;
   }
