@@ -10,8 +10,14 @@ const loadTone = async () => {
   if (typeof window === 'undefined') return null;
   if (Tone) return Tone;
   
-  Tone = await import('tone');
-  return Tone;
+  try {
+    // Use dynamic import with webpack chunk name for better code splitting
+    Tone = await import(/* webpackChunkName: "tone" */ 'tone');
+    return Tone.default || Tone;
+  } catch (error) {
+    console.error('Failed to load Tone.js:', error);
+    return null;
+  }
 };
 
 // Map note names to Tone.js note format (e.g., "C" -> "C4", "D#" -> "D#4")
@@ -89,7 +95,8 @@ export const initializePianoSampler = async () => {
 
   // Use Salamander piano samples (free, high quality)
   // These are sparse samples that Tone.Sampler will pitch shift to fill gaps
-  pianoSampler = new ToneModule.Sampler({
+  const ToneClass = ToneModule.default || ToneModule;
+  pianoSampler = new ToneClass.Sampler({
     urls: {
       C4: 'C4.mp3',
       'D#4': 'Ds4.mp3',
@@ -101,7 +108,7 @@ export const initializePianoSampler = async () => {
   }).toDestination();
 
   // Wait for samples to load
-  await ToneModule.loaded();
+  await ToneClass.loaded();
   isInitialized = true;
 
   return pianoSampler;
@@ -126,8 +133,9 @@ export const playChord = async (
     }
 
     // Initialize Tone.js context if not already started
-    if (ToneModule.context.state !== 'running') {
-      await ToneModule.start();
+    const ToneClass = ToneModule.default || ToneModule;
+    if (ToneClass.context && ToneClass.context.state !== 'running') {
+      await ToneClass.start();
     }
 
     // Initialize sampler if not already done
@@ -136,7 +144,7 @@ export const playChord = async (
     // Convert notes to Tone.js format
     const toneNotes = notes.map(note => noteToToneNote(note, octave));
 
-    // Play the chord
+    // Play the chord (sampler should already be initialized with ToneClass)
     sampler.triggerAttackRelease(toneNotes, duration);
   } catch (error) {
     console.error('Error playing chord:', error);

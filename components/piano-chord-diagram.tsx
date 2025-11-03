@@ -23,33 +23,35 @@ interface PianoChordDiagramProps {
 
 // Helper function to normalize chord names for the API
 const normalizeChordName = (chordName: string): string => {
+  if (!chordName) return chordName;
+  
   // Convert French notation to standard notation
   // IMPORTANT: Check longer patterns first (Do# before Do, Ré♭ before Ré)
-  const frenchToStandard: { [key: string]: string } = {
-    'Do#': 'C#',
-    'Ré#': 'D#',
-    'Ré♭': 'Db',
-    'Mi♭': 'Eb',
-    'Fa#': 'F#',
-    'Sol#': 'G#',
-    'Sol♭': 'Gb',
-    'La#': 'A#',
-    'La♭': 'Ab',
-    'Si♭': 'Bb',
-    'Do': 'C',
-    'Ré': 'D',
-    'Mi': 'E',
-    'Fa': 'F',
-    'Sol': 'G',
-    'La': 'A',
-    'Si': 'B',
-  };
+  // Use array to guarantee order: longer patterns MUST come first
+  const frenchToStandard: Array<[string, string]> = [
+    ['Do#', 'C#'],
+    ['Do', 'C'], // Must come AFTER Do# to avoid partial match
+    ['Ré#', 'D#'],
+    ['Ré♭', 'Db'],
+    ['Ré', 'D'], // Must come AFTER Ré# and Ré♭ to avoid partial match
+    ['Mi♭', 'Eb'],
+    ['Mi', 'E'], // Must come AFTER Mi♭
+    ['Fa#', 'F#'],
+    ['Fa', 'F'], // Must come AFTER Fa#
+    ['Sol#', 'G#'],
+    ['Sol♭', 'Gb'],
+    ['Sol', 'G'], // Must come AFTER Sol# and Sol♭
+    ['La#', 'A#'],
+    ['La♭', 'Ab'],
+    ['La', 'A'], // Must come AFTER La# and La♭
+    ['Si♭', 'Bb'],
+    ['Si', 'B'], // Must come AFTER Si♭
+  ];
 
   // Check if it's French notation and convert
-  // Use startsWith for each French note to avoid partial matches
-  // Process longer patterns first
+  // Process longer patterns first to avoid "Do" being split
   let normalized = chordName;
-  for (const [french, standard] of Object.entries(frenchToStandard)) {
+  for (const [french, standard] of frenchToStandard) {
     if (normalized.startsWith(french)) {
       normalized = normalized.replace(french, standard);
       break; // Only replace once, at the start
@@ -62,16 +64,32 @@ const normalizeChordName = (chordName: string): string => {
 
 // Function to extract notes from chord name
 const extractNotesFromChord = (chordName: string): string[] => {
+  if (!chordName) return [];
+  
   // Convert French notation to English first
-  const frenchToEnglish: { [key: string]: string } = {
-    'Do': 'C', 'Do#': 'C#', 'Ré': 'D', 'Ré#': 'D#', 'Mi': 'E', 
-    'Fa': 'F', 'Fa#': 'F#', 'Sol': 'G', 'Sol#': 'G#', 
-    'La': 'A', 'La#': 'A#', 'Si': 'B',
-    'Ré♭': 'Db', 'Mi♭': 'Eb', 'Sol♭': 'Gb', 'La♭': 'Ab', 'Si♭': 'Bb',
-  };
+  // Order matters: check longer patterns first (Do# before Do, Ré♭ before Ré)
+  const frenchToEnglish: Array<[string, string]> = [
+    ['Do#', 'C#'],
+    ['Do', 'C'], // Must come AFTER Do# to avoid partial match
+    ['Ré#', 'D#'],
+    ['Ré♭', 'Db'],
+    ['Ré', 'D'], // Must come AFTER Ré# and Ré♭
+    ['Mi♭', 'Eb'],
+    ['Mi', 'E'], // Must come AFTER Mi♭
+    ['Fa#', 'F#'],
+    ['Fa', 'F'], // Must come AFTER Fa#
+    ['Sol#', 'G#'],
+    ['Sol♭', 'Gb'],
+    ['Sol', 'G'], // Must come AFTER Sol# and Sol♭
+    ['La#', 'A#'],
+    ['La♭', 'Ab'],
+    ['La', 'A'], // Must come AFTER La# and La♭
+    ['Si♭', 'Bb'],
+    ['Si', 'B'], // Must come AFTER Si♭
+  ];
   
   let normalized = chordName;
-  for (const [french, english] of Object.entries(frenchToEnglish)) {
+  for (const [french, english] of frenchToEnglish) {
     if (chordName.startsWith(french)) {
       normalized = english + chordName.substring(french.length);
       break;

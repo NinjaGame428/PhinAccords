@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { frenchToEnglishChord } from '@/lib/chord-utils';
 import {
   Dialog,
   DialogContent,
@@ -258,6 +259,55 @@ export const SimpleSongEditor: React.FC<SimpleSongEditorProps> = ({ songSlug, so
       // Generate slug from title
       const generatedSlug = createSlug(songData.title.trim());
 
+      // Normalize chords in lyrics to English before saving
+      // This ensures all chords are stored in English format in the database
+      const normalizeChordsInLyrics = (htmlContent: string): string => {
+        if (!htmlContent) return htmlContent;
+        
+        // Create a temporary div to parse HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        
+        // Find all chord markers and normalize their data-chord attributes to English
+        const chordElements = tempDiv.querySelectorAll('[data-chord], .chord-marker');
+        chordElements.forEach((element) => {
+          const htmlElement = element as HTMLElement;
+          const chordAttr = htmlElement.getAttribute('data-chord');
+          const chordText = htmlElement.textContent || '';
+          
+          if (chordAttr) {
+            // If chord is already in English format, keep it
+            // If it's in French, convert to English
+            const englishChord = chordAttr.match(/^(Do|Ré|Mi|Fa|Sol|La|Si)/) 
+              ? frenchToEnglishChord(chordAttr) 
+              : chordAttr;
+            
+            // Ensure data-chord is set to English version
+            htmlElement.setAttribute('data-chord', englishChord);
+          } else if (chordText) {
+            // If no data-chord but has chord text, extract and convert
+            const chordMatch = chordText.match(/\[([^\]]+)\]/);
+            if (chordMatch) {
+              const chordName = chordMatch[1];
+              const englishChord = chordName.match(/^(Do|Ré|Mi|Fa|Sol|La|Si)/) 
+                ? frenchToEnglishChord(chordName) 
+                : chordName;
+              
+              // Set data-chord attribute if element doesn't have class="chord-marker"
+              if (!htmlElement.classList.contains('chord-marker')) {
+                htmlElement.classList.add('chord-marker');
+              }
+              htmlElement.setAttribute('data-chord', englishChord);
+            }
+          }
+        });
+        
+        return tempDiv.innerHTML;
+      };
+
+      // Normalize lyrics content before saving
+      const normalizedLyrics = normalizeChordsInLyrics(songData.lyrics || '');
+      
       // Build payload with all fields - ensure everything is saved to database
       const payload: {
         title: string;
@@ -271,7 +321,7 @@ export const SimpleSongEditor: React.FC<SimpleSongEditorProps> = ({ songSlug, so
         artist_id: newArtistId.trim(), // Ensure trimmed and valid
         key_signature: songData.key_signature && songData.key_signature.trim() !== '' ? songData.key_signature.trim() : null,
         tempo: songData.tempo && songData.tempo.toString().trim() !== '' ? parseInt(songData.tempo.toString()) : null,
-        lyrics: songData.lyrics.trim() || '',
+        lyrics: normalizedLyrics.trim() || '', // Use normalized lyrics with chords in English
         slug: generatedSlug, // Always generate slug from title
       };
 

@@ -94,9 +94,22 @@ const PianoChordsPage = () => {
 
   // Function to convert chord names to French
   const getChordName = (chordName: string) => {
+    if (!chordName) return chordName;
+    
     if (language === 'fr') {
       // First check if chord name is already in French (avoid double translation)
-      const frenchNotes = ['Do', 'Ré', 'Mi', 'Fa', 'Sol', 'La', 'Si', 'Do#', 'Ré#', 'Fa#', 'Sol#', 'La#', 'Ré♭', 'Mi♭', 'Sol♭', 'La♭', 'Si♭'];
+      // Order matters: check longer patterns first to avoid partial matches
+      // Check "Do" before "D" to avoid splitting "Do" into "D" + "o"
+      const frenchNotes = [
+        'Do#', 'Do', // Must check Do# before Do
+        'Ré#', 'Ré♭', 'Ré', // Must check Ré# and Ré♭ before Ré
+        'Mi♭', 'Mi',
+        'Fa#', 'Fa',
+        'Sol#', 'Sol♭', 'Sol',
+        'La#', 'La♭', 'La',
+        'Si♭', 'Si'
+      ];
+      
       for (const frenchNote of frenchNotes) {
         if (chordName.startsWith(frenchNote)) {
           return chordName; // Already in French, return as-is
@@ -104,25 +117,25 @@ const PianoChordsPage = () => {
       }
       
       // Order matters: replace longer patterns first to avoid partial matches
-      // Process from longest to shortest to avoid "D" matching inside "D#"
+      // Process from longest to shortest to avoid "D" matching inside "D#" or "Do" being split
       const replacements: Array<{ pattern: RegExp; replacement: string }> = [
         { pattern: /^C#/, replacement: 'Do#' },
+        { pattern: /^C(?![#b])/, replacement: 'Do' }, // C not followed by # or b - MUST come before D patterns
         { pattern: /^Db/, replacement: 'Ré♭' },
         { pattern: /^D#/, replacement: 'Ré#' },
+        { pattern: /^D(?![#b])/, replacement: 'Ré' }, // D not followed by # or b - AFTER C patterns
         { pattern: /^Eb/, replacement: 'Mi♭' },
+        { pattern: /^E(?![#b])/, replacement: 'Mi' },
         { pattern: /^F#/, replacement: 'Fa#' },
+        { pattern: /^F(?![#b])/, replacement: 'Fa' },
         { pattern: /^Gb/, replacement: 'Sol♭' },
         { pattern: /^G#/, replacement: 'Sol#' },
+        { pattern: /^G(?![#b])/, replacement: 'Sol' },
         { pattern: /^Ab/, replacement: 'La♭' },
         { pattern: /^A#/, replacement: 'La#' },
+        { pattern: /^A(?![#b])/, replacement: 'La' },
         { pattern: /^Bb/, replacement: 'Si♭' },
-        { pattern: /^C(?![#b])/, replacement: 'Do' }, // C not followed by # or b
-        { pattern: /^D(?![#b])/, replacement: 'Ré' }, // D not followed by # or b
-        { pattern: /^E(?![#b])/, replacement: 'Mi' }, // E not followed by # or b
-        { pattern: /^F(?![#b])/, replacement: 'Fa' }, // F not followed by # or b
-        { pattern: /^G(?![#b])/, replacement: 'Sol' }, // G not followed by # or b
-        { pattern: /^A(?![#b])/, replacement: 'La' }, // A not followed by # or b
-        { pattern: /^B(?![#b])/, replacement: 'Si' }, // B not followed by # or b
+        { pattern: /^B(?![#b])/, replacement: 'Si' },
       ];
       
       // Replace chord names in the chord name string (only match at start to avoid issues)
@@ -144,11 +157,25 @@ const PianoChordsPage = () => {
     ? [t('chord.allLevels'), t('chord.easy'), t('chord.medium'), t('chord.hard')]
     : [t('chord.allLevels'), t('chord.easy'), t('chord.medium'), t('chord.hard')];
 
+  // Clear cache and fetch fresh data
+  const clearCache = async () => {
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames.map(cacheName => caches.delete(cacheName))
+      );
+      console.log('✅ Cache cleared');
+    }
+  };
+
   // Fetch piano chords from database
   useEffect(() => {
     const fetchPianoChords = async () => {
       console.log('🎹 Fetching piano chords from database...');
       setIsLoading(true);
+      
+      // Clear cache on first load to ensure fresh data
+      await clearCache();
 
       try {
         // Build query parameters
@@ -190,6 +217,9 @@ const PianoChordsPage = () => {
           params.append('difficulty', englishDifficulty);
         }
 
+        // Add language parameter
+        params.append('language', language);
+        
         const response = await fetch(`/api/piano-chords?${params.toString()}`);
         if (!response.ok) {
           throw new Error('Failed to fetch piano chords');
@@ -198,13 +228,53 @@ const PianoChordsPage = () => {
         const data = await response.json();
         const dbChords = data.chords || [];
 
-        // Remove duplicates based on chord_name and inversion combination
+        // Normalize chord names to English for comparison (to handle mixed French/English in database)
+        const normalizeForComparison = (chordName: string): string => {
+          if (!chordName) return chordName;
+          
+          // Check if it's French notation and convert to English
+          // Order matters: check longer patterns first (Do# before Do, Ré# before Ré, etc.)
+          const frenchToEnglish: Array<[string, string]> = [
+            ['Do#', 'C#'],
+            ['Do', 'C'], // Must come after Do# to avoid partial match
+            ['Ré#', 'D#'],
+            ['Ré♭', 'Db'],
+            ['Ré', 'D'], // Must come after Ré# and Ré♭ to avoid partial match
+            ['Mi♭', 'Eb'],
+            ['Mi', 'E'], // Must come after Mi♭
+            ['Fa#', 'F#'],
+            ['Fa', 'F'], // Must come after Fa#
+            ['Sol#', 'G#'],
+            ['Sol♭', 'Gb'],
+            ['Sol', 'G'], // Must come after Sol# and Sol♭
+            ['La#', 'A#'],
+            ['La♭', 'Ab'],
+            ['La', 'A'], // Must come after La# and La♭
+            ['Si♭', 'Bb'],
+            ['Si', 'B'], // Must come after Si♭
+          ];
+          
+          // Check each French note in order (longest first)
+          for (const [french, english] of frenchToEnglish) {
+            if (chordName.startsWith(french)) {
+              return english + chordName.substring(french.length);
+            }
+          }
+          
+          // If no French note found, assume it's already in English
+          return chordName;
+        };
+
+        // Remove duplicates based on normalized chord_name and inversion combination
         const uniqueChordsMap = new Map<string, any>();
         dbChords.forEach((chord: any) => {
-          // Create a unique key: root_name + inversion
-          const rootName = chord.root_name || chord.chord_name;
+          // Normalize root_name and chord_name to English for comparison
+          const normalizedRootName = normalizeForComparison(chord.root_name || chord.chord_name);
+          const normalizedChordName = normalizeForComparison(chord.chord_name);
           const inversion = chord.inversion ?? 0;
-          const uniqueKey = `${rootName}_${inversion}`;
+          
+          // Create a unique key: normalized_root_name + inversion
+          const uniqueKey = `${normalizedRootName}_${inversion}`;
           
           // Keep only the first occurrence (prioritize root position)
           if (!uniqueChordsMap.has(uniqueKey)) {
@@ -218,30 +288,31 @@ const PianoChordsPage = () => {
           }
         });
 
-        // Group unique chords by root_name (to show all inversions together)
-        // Use the uniqueChordNamesMap to ensure we don't add duplicates
+        // Group unique chords by normalized root_name (to show all inversions together)
         const chordGroups = new Map<string, any[]>();
-        const processedChordNames = new Set<string>();
+        const processedNormalizedChordNames = new Set<string>();
         
         uniqueChordsMap.forEach((chord: any) => {
-          const chordName = chord.chord_name;
+          // Normalize chord name for comparison
+          const normalizedChordName = normalizeForComparison(chord.chord_name);
+          const normalizedRootName = normalizeForComparison(chord.root_name || chord.chord_name);
           
-          // Skip if we've already processed this exact chord name
-          if (processedChordNames.has(chordName)) {
+          // Skip if we've already processed this normalized chord name
+          if (processedNormalizedChordNames.has(normalizedChordName)) {
             return;
           }
           
-          processedChordNames.add(chordName);
-          const rootName = chord.root_name || chord.chord_name;
+          processedNormalizedChordNames.add(normalizedChordName);
           
-          if (!chordGroups.has(rootName)) {
-            chordGroups.set(rootName, []);
+          // Use normalized root name for grouping (ensures consistent grouping)
+          if (!chordGroups.has(normalizedRootName)) {
+            chordGroups.set(normalizedRootName, []);
           }
-          chordGroups.get(rootName)!.push(chord);
+          chordGroups.get(normalizedRootName)!.push(chord);
         });
 
         // Convert database format to component format and remove duplicate inversions
-        const chordsArray: Chord[] = Array.from(chordGroups.entries()).map(([rootName, chordVariations]) => {
+        const chordsArray: Chord[] = Array.from(chordGroups.entries()).map(([normalizedRootName, chordVariations]) => {
           // Remove duplicate inversions (keep only one per inversion number)
           const uniqueInversions = new Map<number, any>();
           chordVariations.forEach((c: any) => {
@@ -259,12 +330,16 @@ const PianoChordsPage = () => {
           // Get root position chord (inversion = 0) as primary
           const rootChord = sortedVariations.find((c: any) => c.inversion === 0) || sortedVariations[0];
           
-          // Extract root note for key
-          const rootNoteMatch = rootName.match(/^([A-G][#b]?)/);
+          // Use the ORIGINAL chord_name from API (already in correct language if language=fr)
+          // Normalize only for extracting root note for sorting/filtering
+          const rootNoteMatch = normalizedRootName.match(/^([A-G][#b]?)/);
           const rootNote = rootNoteMatch ? rootNoteMatch[1] : 'C';
+          
+          // Get the actual display name from root chord (already in correct language from API)
+          const displayName = rootChord.chord_name || normalizedRootName;
 
           return {
-            name: rootName,
+            name: displayName, // Use actual chord_name from API (already in correct language)
             key: rootNote,
             difficulty: (rootChord.difficulty || 'Medium') as 'Easy' | 'Medium' | 'Hard',
             pianoChords: sortedVariations.map((c: any) => ({
@@ -274,11 +349,11 @@ const PianoChordsPage = () => {
                     c.inversion === 3 ? 'Third Inversion' : 'Inversion',
               notes: c.notes || [],
               fingers: c.finger_positions || [1, 3, 5],
-              description: c.description || '',
+              description: c.description || '', // Already in correct language from API
               chordId: c.id, // Store database ID for reference
               inversion: c.inversion || 0,
             })),
-            description: rootChord.description || '',
+            description: rootChord.description || '', // Already in correct language from API
             commonUses: [],
             alternativeNames: [],
             category: rootChord.chord_type || 'Chord'
@@ -494,31 +569,31 @@ const PianoChordsPage = () => {
               <div className="mt-4 pt-4 border-t">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Category</label>
+                    <label className="text-sm font-medium mb-2 block">{t('piano.category')}</label>
                     <Select>
                       <SelectTrigger>
-                        <SelectValue placeholder="All Categories" />
+                        <SelectValue placeholder={t('piano.allCategories')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        <SelectItem value="major">Major</SelectItem>
-                        <SelectItem value="minor">Minor</SelectItem>
-                        <SelectItem value="seventh">7th Chords</SelectItem>
-                        <SelectItem value="suspended">Suspended</SelectItem>
+                        <SelectItem value="all">{t('piano.allCategories')}</SelectItem>
+                        <SelectItem value="major">{t('piano.major')}</SelectItem>
+                        <SelectItem value="minor">{t('piano.minor')}</SelectItem>
+                        <SelectItem value="seventh">{t('piano.seventh')}</SelectItem>
+                        <SelectItem value="suspended">{t('piano.suspended')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Sort By</label>
+                    <label className="text-sm font-medium mb-2 block">{t('piano.sortBy')}</label>
                     <Select>
                       <SelectTrigger>
-                        <SelectValue placeholder="Name" />
+                        <SelectValue placeholder={t('piano.name')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="name">Name</SelectItem>
-                        <SelectItem value="difficulty">Difficulty</SelectItem>
-                        <SelectItem value="key">Key</SelectItem>
-                        <SelectItem value="popularity">Popularity</SelectItem>
+                        <SelectItem value="name">{t('piano.name')}</SelectItem>
+                        <SelectItem value="difficulty">{t('common.difficulty')}</SelectItem>
+                        <SelectItem value="key">{t('common.key')}</SelectItem>
+                        <SelectItem value="popularity">{t('piano.popularity')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -539,25 +614,23 @@ const PianoChordsPage = () => {
             </div>
           ) : filteredChords.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {filteredChords.map((chord) => (
-                <div key={chord.name} className="space-y-4">
-                  {chord.pianoChords.map((pianoChord, index) => (
-                    <PianoChordDiagram
-                      key={`${chord.name}-piano-${index}`}
-                      chordName={getChordName(chord.name)}
-                      notes={pianoChord.notes}
-                      fingers={pianoChord.fingers}
-                      description={chord.description}
-                      difficulty={chord.difficulty}
-                      category={chord.category}
-                      commonUses={chord.commonUses}
-                      onPlay={() => handlePlayChord(`${chord.name}-piano-${index}`)}
-                      onStop={() => setPlayingChord(null)}
-                      isPlaying={playingChord === `${chord.name}-piano-${index}`}
-                    />
-                  ))}
-                </div>
-              ))}
+              {filteredChords.flatMap((chord) =>
+                chord.pianoChords.map((pianoChord, index) => (
+                  <PianoChordDiagram
+                    key={`${chord.name}-piano-${index}`}
+                    chordName={chord.name} // Already in correct language from API (Do, Ré♭m6, etc.)
+                    notes={pianoChord.notes}
+                    fingers={pianoChord.fingers}
+                    description={pianoChord.description} // Already in correct language from API
+                    difficulty={chord.difficulty}
+                    category={chord.category}
+                    commonUses={chord.commonUses}
+                    onPlay={() => handlePlayChord(`${chord.name}-piano-${index}`)}
+                    onStop={() => setPlayingChord(null)}
+                    isPlaying={playingChord === `${chord.name}-piano-${index}`}
+                  />
+                ))
+              )}
             </div>
           ) : (
             <div className="text-center py-12">

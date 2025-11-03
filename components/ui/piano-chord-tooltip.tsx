@@ -134,6 +134,8 @@ export const PianoChordTooltip: React.FC<PianoChordTooltipProps> = ({ chordName,
   }, [chordName]);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    
     const handleClickOutside = (event: MouseEvent) => {
       if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
         onClose();
@@ -156,6 +158,8 @@ export const PianoChordTooltip: React.FC<PianoChordTooltipProps> = ({ chordName,
   }, [onClose]);
 
   const normalizedChordName = normalizeChordName(chordName);
+
+  if (typeof window === 'undefined') return null;
 
   return (
     <div

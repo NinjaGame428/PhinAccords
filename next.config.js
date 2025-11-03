@@ -33,6 +33,21 @@ const nextConfig = {
       use: ['@svgr/webpack'],
     });
     
+    // Handle Tone.js dynamic imports properly
+    config.resolve.alias = {
+      ...config.resolve.alias,
+    };
+    
+    // Externalize tone for better code splitting
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+      };
+    }
+    
     // Development: Fix chunk loading issues
     if (dev && !isServer) {
       config.optimization = {

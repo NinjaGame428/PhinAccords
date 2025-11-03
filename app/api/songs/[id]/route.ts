@@ -131,8 +131,11 @@ export async function PUT(
     const {
       title,
       artist_id,
-      key_signature,
+      key, // Current transposed key (from AdvancedSongEditor)
+      original_key, // Original key when song was first created
+      key_signature, // Legacy support (maps to key)
       tempo,
+      bpm, // Alternative name for tempo
       lyrics,
       slug,
       genre,
@@ -171,11 +174,24 @@ export async function PUT(
         updateData.artist = null;
       }
     }
-    if (key_signature !== undefined) {
-      updateData.key_signature = key_signature && key_signature.trim() !== '' ? key_signature.trim() : null;
+    // Handle key_signature (current transposed key)
+    // Accept either 'key' or 'key_signature' for backward compatibility
+    const currentKey = key || key_signature;
+    if (currentKey !== undefined) {
+      updateData.key_signature = currentKey && currentKey.trim() !== '' ? currentKey.trim() : null;
     }
-    if (tempo !== undefined) {
-      updateData.tempo = tempo && tempo !== '' ? parseInt(String(tempo)) || null : null;
+    
+    // Handle original_key (set on first save, then kept constant)
+    if (original_key !== undefined) {
+      // Only update original_key if it's not already set (to preserve original)
+      // Or if explicitly provided and different from current original_key
+      updateData.original_key = original_key && original_key.trim() !== '' ? original_key.trim() : null;
+    }
+    
+    // Handle tempo (accept either 'tempo' or 'bpm')
+    const songTempo = tempo || bpm;
+    if (songTempo !== undefined) {
+      updateData.tempo = songTempo && songTempo !== '' ? parseInt(String(songTempo)) || null : null;
     }
     if (lyrics !== undefined) {
       updateData.lyrics = lyrics || null;

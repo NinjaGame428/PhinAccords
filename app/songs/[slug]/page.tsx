@@ -179,17 +179,21 @@ const SongDetailsPage = () => {
       return;
     }
     
-    // Replace chords in HTML format: <span class="chord">[ChordName]</span>
+    // Replace chords in HTML format: <span class="chord" data-chord="...">[ChordName]</span>
     let transposedHtml = song.lyrics;
     
-    // Pattern to match chord spans: <span class="chord" ...>[ChordName]</span>
-    const chordSpanPattern = /<span\s+class="chord"[^>]*>\[([^\]]+)\]<\/span>/gi;
+    // Pattern to match chord spans with optional data-chord attribute
+    const chordSpanPattern = /<span\s+class="(?:chord|chord-marker)"[^>]*(?:data-chord="([^"]*)")?[^>]*>\[([^\]]+)\]<\/span>/gi;
     
-    transposedHtml = transposedHtml.replace(chordSpanPattern, (match: string, chordName: string) => {
-      // Convert French to English if needed for transposition
-      let englishChord = chordName.trim();
-      if (language === 'fr') {
-        englishChord = frenchToEnglishChord(chordName.trim()) || chordName.trim();
+    transposedHtml = transposedHtml.replace(chordSpanPattern, (match: string, dataChord: string | undefined, chordName: string) => {
+      // Priority: use data-chord if available (always in English), otherwise use textContent
+      let englishChord = dataChord?.trim() || chordName.trim();
+      
+      // If we got chordName but not dataChord, convert to English if needed
+      if (!dataChord) {
+        if (language === 'fr') {
+          englishChord = frenchToEnglishChord(chordName.trim()) || chordName.trim();
+        }
       }
       
       // Transpose in English
@@ -201,8 +205,10 @@ const SongDetailsPage = () => {
         transposed = englishToFrenchChord(transposedEnglish) || transposedEnglish;
       }
       
-      // Preserve the original span attributes
-      return match.replace(/\[([^\]]+)\]/, `[${transposed}]`);
+      // Update both data-chord (English) and textContent (viewer's language)
+      return match
+        .replace(/data-chord="[^"]*"/, `data-chord="${transposedEnglish}"`)
+        .replace(/\[([^\]]+)\]/, `[${transposed}]`);
     });
     
     // Also handle any standalone chord patterns in brackets
@@ -269,14 +275,90 @@ const SongDetailsPage = () => {
     setUniqueChords(chordSet);
   };
 
+  // Convert chords in lyrics HTML to viewer's language
+  const convertChordsToViewerLanguage = (lyricsHtml: string): string => {
+    if (!lyricsHtml || language === 'en') {
+      return lyricsHtml; // No conversion needed for English
+    }
+
+    // Create a temporary DOM element to manipulate HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = lyricsHtml;
+
+    // Find all chord elements (both .chord-marker and .chord)
+    const chordElements = tempDiv.querySelectorAll('.chord-marker, .chord');
+    
+    chordElements.forEach((element) => {
+      const htmlElement = element as HTMLElement;
+      
+      // Priority: use dataset.chord if available (always in English), otherwise use textContent
+      let englishChord: string | null = null;
+      
+      if (htmlElement.dataset.chord) {
+        // Use dataset.chord (stored in English)
+        englishChord = htmlElement.dataset.chord;
+      } else {
+        // Extract from textContent
+        const chordText = htmlElement.textContent || '';
+        const chordName = chordText.replace(/\[|\]/g, '').trim();
+        
+        // Check if it's already in French (to avoid double conversion)
+        const frenchNotes = ['Do', 'Ré', 'Mi', 'Fa', 'Sol', 'La', 'Si'];
+        const isFrench = frenchNotes.some(note => chordName.startsWith(note));
+        
+        if (!isFrench) {
+          // Assume it's English, convert to French
+          englishChord = chordName;
+        } else {
+          // Already in French, convert to English first, then back to French
+          englishChord = frenchToEnglishChord(chordName);
+        }
+      }
+      
+      if (englishChord) {
+        // Convert to French for display
+        const frenchChord = englishToFrenchChord(englishChord);
+        
+        // Update textContent with French chord
+        htmlElement.textContent = `[${frenchChord}]`;
+        
+        // Keep dataset.chord in English for transposition/processing
+        htmlElement.dataset.chord = englishChord;
+      }
+    });
+
+    // Also handle standalone chord patterns in brackets (not in spans)
+    const standaloneChordPattern = /\[([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|7|9|11|13)?(?:\/[A-G][#b]?)?)\]/gi;
+    let modifiedHtml = tempDiv.innerHTML;
+    modifiedHtml = modifiedHtml.replace(standaloneChordPattern, (match: string, chordName: string) => {
+      // Only replace if not already inside a chord span
+      if (!match.includes('class="chord') && !match.includes('class="chord-marker')) {
+        // Check if it's already in French
+        const frenchNotes = ['Do', 'Ré', 'Mi', 'Fa', 'Sol', 'La', 'Si'];
+        const isFrench = frenchNotes.some(note => chordName.startsWith(note));
+        
+        if (!isFrench) {
+          // Convert to French
+          const frenchChord = englishToFrenchChord(chordName);
+          return `[${frenchChord}]`;
+        }
+      }
+      return match;
+    });
+
+    return modifiedHtml;
+  };
+
   // Reset transpose when song changes
   useEffect(() => {
     if (song) {
       setTransposeKey(null);
       setTransposedLyrics(null);
-      extractChords(song.lyrics);
+      // Convert chords to viewer's language before extracting
+      const convertedLyrics = convertChordsToViewerLanguage(song.lyrics || '');
+      extractChords(convertedLyrics);
     }
-  }, [song?.id]);
+  }, [song?.id, language]);
 
   const fetchSong = async (showRefreshIndicator = false) => {
     try {
@@ -776,19 +858,21 @@ const SongDetailsPage = () => {
                       <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700 w-full">
                         <div 
                           className="font-mono text-base leading-loose whitespace-pre-wrap prose prose-sm max-w-none w-full"
-                          dangerouslySetInnerHTML={{ __html: transposedLyrics || song.lyrics }}
+                          dangerouslySetInnerHTML={{ __html: transposedLyrics || convertChordsToViewerLanguage(song.lyrics || '') }}
                           onClick={(e) => {
                             // Handle chord clicks from HTML content
                             const target = e.target as HTMLElement;
-                            const chordElement = target.closest('.chord');
+                            const chordElement = target.closest('.chord, .chord-marker') as HTMLElement;
                             
                             if (chordElement) {
                               e.preventDefault();
                               e.stopPropagation();
                               
-                              // Extract chord name from the element
-                              const chordText = chordElement.textContent || '';
-                              const chordName = chordText.replace(/\[|\]/g, '').trim();
+                              // Extract chord name - prefer dataset.chord (English) for API calls
+                              // but display the textContent (already converted to viewer's language)
+                              const englishChord = chordElement.dataset.chord || '';
+                              const displayChord = chordElement.textContent?.replace(/\[|\]/g, '').trim() || '';
+                              const chordName = displayChord;
                               
                               if (chordName) {
                                 const rect = chordElement.getBoundingClientRect();

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { convertChordArray, transposeChord as transposeChordUtil, getSemitoneIndex, frenchToEnglishChord } from '@/lib/chord-utils';
+import { convertChordArray, transposeChord as transposeChordUtil, getSemitoneIndex, frenchToEnglishChord, englishToFrenchChord } from '@/lib/chord-utils';
 import { Interval } from 'tonal';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -115,6 +115,7 @@ interface SongData {
   title: string;
   artist: string;
   key: string;
+  originalKey?: string; // Original key when song was first created
   tempo: number;
   timeSignature: string;
   sections: SongSection[];
@@ -160,6 +161,7 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
     title: '',
     artist: '',
     key: 'C',
+    originalKey: 'C', // Initialize original key
     tempo: 120,
     timeSignature: '4/4',
     sections: [],
@@ -200,6 +202,7 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
   const [chordItalic, setChordItalic] = useState(false);
   
   const editorRef = useRef<HTMLDivElement>(null);
+  const savedRangeRef = useRef<Range | null>(null);
   const chordInputRef = useRef<HTMLInputElement>(null);
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
@@ -223,6 +226,16 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
       }
     };
   }, [autoSave]); // Removed songData dependency to prevent constant re-renders
+
+  // Update chords display when language changes
+  useEffect(() => {
+    if (editorRef.current && songData.sections && songData.sections.length > 0) {
+      const currentContent = editorRef.current.innerHTML;
+      if (currentContent) {
+        editorRef.current.innerHTML = convertChordsToDisplayLanguage(currentContent);
+      }
+    }
+  }, [language]);
 
   const loadSongData = async () => {
     if (!songId || songId === '{songId}') {
@@ -251,11 +264,16 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
       console.log('Song lyrics type:', typeof song.lyrics);
       
       // Transform database song to editor format - with extra safety
+      // Use original_key if available, otherwise use key_signature (set original_key for new songs)
+      const originalKey = song?.original_key || song?.key_signature || 'C';
+      const currentKey = song?.key_signature || 'C';
+      
       const transformedData: SongData = {
         id: song?.id || songId,
         title: song?.title || 'Untitled',
         artist: song?.artists?.name || song?.artist || 'Unknown Artist',
-        key: song?.key_signature || 'C',
+        key: currentKey, // Current key (may be transposed)
+        originalKey: originalKey, // Store original key separately
         tempo: parseInt(song?.tempo) || 120,
         timeSignature: song?.time_signature || '4/4',
         sections: [],  // Will be populated below
@@ -327,6 +345,14 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
       console.log('Sections array is:', Array.isArray(transformedData.sections) ? 'ARRAY' : 'NOT ARRAY');
       console.log('Sections length:', transformedData.sections?.length);
       
+      // Convert chords in sections content to admin's language for display
+      if (transformedData.sections && transformedData.sections.length > 0) {
+        transformedData.sections = transformedData.sections.map(section => ({
+          ...section,
+          content: convertChordsToDisplayLanguage(section.content)
+        }));
+      }
+      
       // Update state safely
       try {
         setSongData(transformedData);
@@ -337,6 +363,11 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
         throw stateError;
       }
       
+      // Update editor content with converted chords
+      if (editorRef.current && transformedData.sections && transformedData.sections.length > 0) {
+        editorRef.current.innerHTML = transformedData.sections[0].content || '';
+      }
+      
       setIsLoading(false);
     } catch (error) {
       console.error('Error loading song:', error);
@@ -345,25 +376,131 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
     }
   };
 
+  // Convert chords in HTML to admin's language for display
+  const convertChordsToDisplayLanguage = (htmlContent: string): string => {
+    if (!htmlContent) return htmlContent;
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    
+    // Find all chord elements
+    const chordElements = tempDiv.querySelectorAll('.chord-marker, .chord');
+    
+    chordElements.forEach((element) => {
+      const htmlElement = element as HTMLElement;
+      let englishChord: string | null = null;
+      
+      // Priority: use dataset.chord if available (always in English)
+      if (htmlElement.dataset.chord) {
+        englishChord = htmlElement.dataset.chord;
+      } else {
+        // Extract from textContent and convert to English if needed
+        const chordText = htmlElement.textContent || '';
+        const chordName = chordText.replace(/\[|\]/g, '').trim();
+        
+        // Check if it's French and convert to English
+        const frenchNotes = ['Do', 'Ré', 'Mi', 'Fa', 'Sol', 'La', 'Si'];
+        const isFrench = frenchNotes.some(note => chordName.startsWith(note));
+        
+        if (isFrench) {
+          englishChord = frenchToEnglishChord(chordName);
+        } else {
+          englishChord = chordName; // Already in English
+        }
+      }
+      
+      if (englishChord) {
+        // Ensure dataset.chord is set to English (for storage)
+        htmlElement.dataset.chord = englishChord;
+        // Update textContent to admin's language for display
+        const displayChord = language === 'fr' 
+          ? englishToFrenchChord(englishChord)
+          : englishChord;
+        htmlElement.textContent = `[${displayChord}]`;
+      }
+    });
+    
+    return tempDiv.innerHTML;
+  };
+
+  // Normalize chords in HTML to English before saving
+  const normalizeChordsToEnglish = (htmlContent: string): string => {
+    if (!htmlContent) return htmlContent;
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    
+    // Find all chord elements
+    const chordElements = tempDiv.querySelectorAll('.chord-marker, .chord');
+    
+    chordElements.forEach((element) => {
+      const htmlElement = element as HTMLElement;
+      let englishChord: string | null = null;
+      
+      // Priority: use dataset.chord if available (always in English)
+      if (htmlElement.dataset.chord) {
+        englishChord = htmlElement.dataset.chord;
+      } else {
+        // Extract from textContent and convert to English if needed
+        const chordText = htmlElement.textContent || '';
+        const chordName = chordText.replace(/\[|\]/g, '').trim();
+        
+        // Check if it's French and convert to English
+        const frenchNotes = ['Do', 'Ré', 'Mi', 'Fa', 'Sol', 'La', 'Si'];
+        const isFrench = frenchNotes.some(note => chordName.startsWith(note));
+        
+        if (isFrench) {
+          englishChord = frenchToEnglishChord(chordName);
+        } else {
+          englishChord = chordName; // Already in English
+        }
+      }
+      
+      if (englishChord) {
+        // Ensure dataset.chord is set to English
+        htmlElement.dataset.chord = englishChord;
+        // Update textContent to English for storage (will be converted on display)
+        htmlElement.textContent = `[${englishChord}]`;
+      }
+    });
+    
+    return tempDiv.innerHTML;
+  };
+
   const saveSong = async () => {
     try {
+      // Get current editor content and normalize chords to English
+      let editorContent = '';
+      if (editorRef.current) {
+        // Normalize all chords to English before saving
+        editorContent = normalizeChordsToEnglish(editorRef.current.innerHTML);
+      }
+      
       const updatedSong = {
         ...songData,
         version: songData.version + 1,
         lastSaved: new Date().toISOString()
       };
       
+      // If we have normalized editor content, update the sections
+      if (editorContent && updatedSong.sections && updatedSong.sections.length > 0) {
+        // Update the first section's content with normalized HTML
+        updatedSong.sections[0].content = editorContent;
+      }
+      
       setSongData(updatedSong);
       setVersionHistory(prev => [updatedSong, ...prev.slice(0, 9)]);
       
       // Transform editor format to database format
+      // Store original_key on first save, keep key_signature as current transposed key
       const dbFormat = {
         title: updatedSong.title,
         artist: updatedSong.artist,
-        key: updatedSong.key,
+        key: updatedSong.key, // Current transposed key
+        original_key: updatedSong.originalKey || updatedSong.key, // Original key (set on first save)
         bpm: updatedSong.tempo,
         difficulty: updatedSong.difficulty,
-        lyrics: JSON.stringify(updatedSong.sections),
+        lyrics: editorContent || JSON.stringify(updatedSong.sections), // Use normalized HTML
         chords: JSON.stringify(updatedSong.sections.flatMap(s => s.chords)),
         genre: updatedSong.genre,
         mood: updatedSong.mood,
@@ -402,41 +539,104 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
     return commonChordsEnglish.includes(englishChord);
   };
 
+  // Save cursor position when editor loses focus (e.g., when clicking chord buttons)
+  const saveEditorRange = () => {
+    if (!editorRef.current) return;
+    
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      // Check if range is within editor
+      if (range.commonAncestorContainer === editorRef.current || 
+          editorRef.current.contains(range.commonAncestorContainer)) {
+        savedRangeRef.current = range.cloneRange();
+      }
+    } else {
+      // No selection, save cursor at end of editor
+      const range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      savedRangeRef.current = range;
+    }
+  };
+
   const insertChord = (chordName: string) => {
     // Store chord in English internally (for database consistency)
     const englishChord = language === 'fr' ? frenchToEnglishChord(chordName) : chordName;
-    if (editorRef.current) {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const chordElement = document.createElement('span');
-        chordElement.className = 'chord-marker';
-        chordElement.style.color = selectedChordColor;
-        chordElement.style.fontWeight = chordBold ? 'bold' : 'normal';
-        chordElement.style.fontStyle = chordItalic ? 'italic' : 'normal';
-        chordElement.style.fontSize = chordSize === 'small' ? '0.8em' : chordSize === 'large' ? '1.2em' : '1em';
-        chordElement.style.backgroundColor = `${selectedChordColor}20`;
-        chordElement.style.padding = '2px 6px';
-        chordElement.style.borderRadius = '4px';
-        chordElement.style.margin = '0 2px';
-        chordElement.style.border = `1px solid ${selectedChordColor}40`;
-        chordElement.contentEditable = 'false';
-        // Display in user's language, but store English version in data attribute
-        const displayChord = language === 'fr' ? chordName : englishChord;
-        chordElement.textContent = `[${displayChord}]`;
-        chordElement.dataset.chord = englishChord; // Always store in English
-        
-        // Add validation styling
-        if (chordValidation && !validateChord(englishChord)) {
-          chordElement.style.borderColor = '#EF4444';
-          chordElement.style.backgroundColor = '#FEF2F2';
-          chordElement.title = 'Invalid chord - check spelling';
-        }
-        
-        range.insertNode(chordElement);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
+    
+    // Display in admin's language for editing
+    const displayChord = language === 'fr' ? englishToFrenchChord(englishChord) : englishChord;
+    const chordText = `[${displayChord}]`;
+    
+    // Find the active/focused textarea in sections
+    const activeElement = document.activeElement;
+    let targetTextarea: HTMLTextAreaElement | null = null;
+    let targetSectionIndex = currentSection;
+    
+    // Check if active element is a textarea in our editor
+    if (activeElement instanceof HTMLTextAreaElement) {
+      // Check if it's within our editor sections
+      const sectionContainer = activeElement.closest('.border.rounded-lg');
+      if (sectionContainer) {
+        targetTextarea = activeElement;
+        // Find which section this textarea belongs to
+        const sections = document.querySelectorAll('.border.rounded-lg');
+        sections.forEach((section, index) => {
+          if (section === sectionContainer) {
+            targetSectionIndex = index;
+          }
+        });
+      }
+    }
+    
+    // If no active textarea, use the current section's textarea or first section
+    if (!targetTextarea && songData.sections && songData.sections.length > 0) {
+      const sectionElements = document.querySelectorAll('textarea');
+      if (sectionElements.length > targetSectionIndex) {
+        targetTextarea = sectionElements[targetSectionIndex] as HTMLTextAreaElement;
+      } else if (sectionElements.length > 0) {
+        targetTextarea = sectionElements[0] as HTMLTextAreaElement;
+        targetSectionIndex = 0;
+      }
+    }
+    
+    if (targetTextarea && songData.sections && songData.sections.length > targetSectionIndex) {
+      // Get cursor position in textarea
+      const start = targetTextarea.selectionStart;
+      const end = targetTextarea.selectionEnd;
+      const textBefore = targetTextarea.value.substring(0, start);
+      const textAfter = targetTextarea.value.substring(end);
+      
+      // Insert chord at cursor position
+      const newContent = textBefore + chordText + textAfter;
+      
+      // Update the section content
+      const newSections = [...songData.sections];
+      newSections[targetSectionIndex] = {
+        ...newSections[targetSectionIndex],
+        content: newContent
+      };
+      setSongData(prev => ({ ...prev, sections: newSections }));
+      
+      // Restore cursor position after the inserted chord
+      setTimeout(() => {
+        targetTextarea?.focus();
+        const newCursorPos = start + chordText.length;
+        targetTextarea?.setSelectionRange(newCursorPos, newCursorPos);
+      }, 0);
+      
+      // Clear chord input
+      setSelectedChord('');
+      setChordSuggestions([]);
+    } else {
+      // Fallback: If we can't find a textarea, just add chord text to current section
+      if (songData.sections && songData.sections.length > currentSection) {
+        const newSections = [...songData.sections];
+        newSections[currentSection] = {
+          ...newSections[currentSection],
+          content: (newSections[currentSection].content || '') + chordText
+        };
+        setSongData(prev => ({ ...prev, sections: newSections }));
         
         setSelectedChord('');
         setChordSuggestions([]);
@@ -452,15 +652,18 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
     
     if (typeof targetKeyOrSemitones === 'string') {
       // Called with a target key (e.g., "D#")
-      const originalKey = songData.key || 'C';
+      // Always transpose from the ORIGINAL key to the target key
+      // This allows transposing from any key to any key (e.g., D to F)
+      const originalKey = songData.originalKey || songData.key || 'C';
+      const targetKey = targetKeyOrSemitones;
       
       // Use tonal to calculate interval between keys
       try {
         // Convert French keys to English for tonal
         const englishOriginalKey = frenchToEnglishChord(originalKey) || originalKey;
-        const englishTargetKey = frenchToEnglishChord(targetKeyOrSemitones) || targetKeyOrSemitones;
+        const englishTargetKey = frenchToEnglishChord(targetKey) || targetKey;
         
-        // Calculate interval using tonal
+        // Calculate interval using tonal (from original to target)
         const interval = Interval.distance(englishOriginalKey, englishTargetKey);
         if (interval) {
           // Convert interval to semitones
@@ -469,21 +672,39 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
         } else {
           // Fallback to manual calculation
           const originalIndex = getSemitoneIndex(originalKey);
-          const targetIndex = getSemitoneIndex(targetKeyOrSemitones);
+          const targetIndex = getSemitoneIndex(targetKey);
           semitones = targetIndex - originalIndex;
         }
       } catch (error) {
         console.error('Error calculating interval with tonal:', error);
         // Fallback to manual calculation
         const originalIndex = getSemitoneIndex(originalKey);
-        const targetIndex = getSemitoneIndex(targetKeyOrSemitones);
+        const targetIndex = getSemitoneIndex(targetKey);
         semitones = targetIndex - originalIndex;
       }
       
-      // Update song key
-      setSongData(prev => ({ ...prev, key: targetKeyOrSemitones }));
+      // Update current song key (but keep originalKey unchanged)
+      setSongData(prev => ({ 
+        ...prev, 
+        key: targetKey,
+        // Ensure originalKey is set if this is first transpose
+        originalKey: prev.originalKey || originalKey
+      }));
     } else if (typeof targetKeyOrSemitones === 'number') {
       // Called with semitone offset (e.g., -1, 1)
+      // Calculate new key from original key + semitone offset
+      const originalKey = songData.originalKey || songData.key || 'C';
+      const originalIndex = getSemitoneIndex(originalKey);
+      const newIndex = (originalIndex + targetKeyOrSemitones + 12) % 12; // Handle negative
+      const keys = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
+      const newKey = keys.find(k => getSemitoneIndex(k) === newIndex) || 'C';
+      
+      setSongData(prev => ({ 
+        ...prev, 
+        key: newKey,
+        originalKey: prev.originalKey || originalKey
+      }));
+      
       semitones = targetKeyOrSemitones;
     }
     
@@ -500,9 +721,9 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
         // Update stored chord (English)
         htmlElement.dataset.chord = transposedChord;
         
-        // Display in user's language
+        // Display in admin's language
         const displayChord = language === 'fr' 
-          ? convertChordArray([transposedChord], 'fr')[0]
+          ? englishToFrenchChord(transposedChord)
           : transposedChord;
         
         htmlElement.textContent = `[${displayChord}]`;
@@ -920,6 +1141,8 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
                               newSections[index].content = e.target.value;
                               setSongData(prev => ({ ...prev, sections: newSections }));
                             }}
+                            onFocus={() => setCurrentSection(index)}
+                            onBlur={saveEditorRange}
                             onKeyDown={handleKeyDown}
                             placeholder="Enter lyrics here... Use Ctrl+K to insert chords"
                             className="min-h-[200px] font-mono text-base resize-none border-0 focus:ring-0 p-0"

@@ -7,9 +7,11 @@ export async function GET(request: NextRequest) {
     const keySignature = searchParams.get('key');
     const difficulty = searchParams.get('difficulty');
     const chordName = searchParams.get('chordName');
+    const language = searchParams.get('language') || 'en'; // Default to English
     
     const serverClient = createServerClient();
     
+    // Select all columns including French versions
     let query = serverClient
       .from('piano_chords')
       .select('*')
@@ -36,7 +38,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ chords: [] }, { status: 200 });
     }
 
-    console.log(`✅ Successfully fetched ${chords?.length || 0} piano chords`);
+    // If French is requested and French names exist, use them
+    if (language === 'fr' && chords) {
+      chords.forEach((chord: any) => {
+        // Use French chord name if available, otherwise keep English (will be converted on frontend)
+        if (chord.chord_name_fr) {
+          chord.chord_name = chord.chord_name_fr;
+        }
+        // Use French description if available
+        if (chord.description_fr) {
+          chord.description = chord.description_fr;
+        }
+      });
+    }
+
+    console.log(`✅ Successfully fetched ${chords?.length || 0} piano chords (language: ${language})`);
+    if (language === 'fr' && chords && chords.length > 0) {
+      const sampleChord = chords[0];
+      console.log(`🎯 Sample: ${sampleChord.chord_name} | Has French: ${!!sampleChord.chord_name_fr} | Desc: ${sampleChord.description?.substring(0, 30)}`);
+    }
 
     return NextResponse.json({ chords: chords || [] });
   } catch (error: any) {
