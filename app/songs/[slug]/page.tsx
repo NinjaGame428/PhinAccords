@@ -178,11 +178,14 @@ const SongDetailsPage = () => {
         // Priority: use data-chord if available (always in English), otherwise use textContent
         let englishChord = dataChord?.trim() || chordName.trim();
         
-        // If we got chordName but not dataChord, convert to English if needed
-        if (!dataChord) {
-          if (language === 'fr') {
-            englishChord = frenchToEnglishChord(chordName.trim()) || chordName.trim();
-          }
+        // Always convert to English if needed (regardless of display language)
+        // Check if chordName is in French notation
+        const frenchNotes = ['Do', 'Ré', 'Mi', 'Fa', 'Sol', 'La', 'Si'];
+        const isFrenchChord = frenchNotes.some(note => englishChord.startsWith(note));
+        
+        if (!dataChord && isFrenchChord) {
+          // Convert French chord to English for transposition
+          englishChord = frenchToEnglishChord(englishChord) || englishChord;
         }
         
         // Use chord-transposer to transpose
@@ -206,16 +209,17 @@ const SongDetailsPage = () => {
       });
       
       // Also handle standalone chord patterns in brackets
-      const standaloneChordPattern = /\[([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|7|9|11|13)?(?:\/[A-G][#b]?)?)\]/gi;
+      // Match both English and French chord names
+      const standaloneChordPattern = /\[([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|7|9|11|13)?(?:\/[A-G][#b]?)?|Do|Ré|Mi|Fa|Sol|La|Si|Do#|Ré#|Fa#|Sol#|La#|Ré♭|Mi♭|Sol♭|La♭|Si♭)[^\]]*\]/gi;
       transposedHtml = transposedHtml.replace(standaloneChordPattern, (match: string, chordName: string) => {
         // Only replace if not already inside a chord span
         if (!match.includes('class="chord') && !match.includes('class="chord-marker')) {
-          // Convert French to English if needed
+          // Always convert to English for transposition (check if it's French)
           let englishChord = chordName;
           const frenchNotes = ['Do', 'Ré', 'Mi', 'Fa', 'Sol', 'La', 'Si'];
           const isFrench = frenchNotes.some(note => chordName.startsWith(note));
           
-          if (isFrench || language === 'fr') {
+          if (isFrench) {
             englishChord = frenchToEnglishChord(chordName) || chordName;
           }
           
@@ -223,7 +227,7 @@ const SongDetailsPage = () => {
           try {
             const transposedEnglish = transpose(englishChord).fromKey(englishOriginalKey).toKey(englishTargetKey).toString();
             
-            // Convert back to French if needed
+            // Convert back to French if needed for display
             let transposed = transposedEnglish;
             if (language === 'fr') {
               transposed = englishToFrenchChord(transposedEnglish) || transposedEnglish;
