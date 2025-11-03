@@ -244,10 +244,11 @@ ${songData.lyrics || 'No lyrics available'}
     }
   };
 
-  // Fetch artists
+  // Fetch artists with cache busting
   const fetchArtists = async () => {
     try {
-      const response = await fetch('/api/artists');
+      const timestamp = Date.now();
+      const response = await fetch(`/api/artists?_t=${timestamp}`);
       if (response.ok) {
         const data = await response.json();
         setArtists(data.artists || []);
@@ -294,10 +295,37 @@ ${songData.lyrics || 'No lyrics available'}
         }
         
         artistId = artistData.artist.id;
-        alert(t('admin.songs.artistCreated'));
         
-        // Refresh artists list
+        // Add the new artist to the local list immediately
+        setArtists([...artists, {
+          id: artistData.artist.id,
+          name: artistData.artist.name
+        }]);
+        
+        // Update the form to use the new artist
+        setNewSong({ ...newSong, artist_id: artistData.artist.id });
+        setIsNewArtist(false);
+        
+        // Refresh artists list from API to ensure consistency
         fetchArtists();
+        
+        // Broadcast artist creation event for other pages
+        window.dispatchEvent(new CustomEvent('artistCreated', { 
+          detail: { 
+            artistId: artistData.artist.id,
+            artistName: artistData.artist.name,
+            timestamp: Date.now()
+          } 
+        }));
+        
+        // Cross-tab communication
+        localStorage.setItem('artistCreated', JSON.stringify({
+          artistId: artistData.artist.id,
+          artistName: artistData.artist.name,
+          timestamp: Date.now()
+        }));
+        
+        alert(t('admin.songs.artistCreated'));
       } catch (error) {
         console.error('Error creating artist:', error);
         alert(t('admin.songs.artistError'));

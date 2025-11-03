@@ -71,8 +71,9 @@ const ArtistsPage = () => {
     try {
       setLoading(true);
       
-      // Fetch artists from API
-      const response = await fetch('/api/artists');
+      // Fetch artists from API with cache busting
+      const timestamp = Date.now();
+      const response = await fetch(`/api/artists?_t=${timestamp}`);
       
       if (!response.ok) {
         console.error('Error fetching artists');
@@ -102,7 +103,7 @@ const ArtistsPage = () => {
       });
 
       // Map artists with their counts
-      const artistsWithCounts = artistsData.map((artist) => ({
+      const artistsWithCounts = artistsData.map((artist: any) => ({
         ...artist,
         song_count: countMap.get(artist.id) || 0,
       }));
@@ -160,9 +161,21 @@ const ArtistsPage = () => {
       fetchArtists();
     };
     
+    // Listen for artist creation events
+    const handleArtistCreated = (event: any) => {
+      console.log('🎨 Artist created event received, refreshing...', event?.detail);
+      setTimeout(() => fetchArtists(), 100);
+    };
+    
+    window.addEventListener('artistCreated', handleArtistCreated);
+    
     // Listen for localStorage changes (cross-tab communication)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'songUpdated' || e.key === 'songDeleted' || e.key === 'artistUpdated') {
+      if (e.key === 'songUpdated' || e.key === 'songDeleted' || e.key === 'artistUpdated' || e.key === 'artistCreated') {
+        if (e.key === 'artistCreated') {
+          handleArtistCreated({ detail: JSON.parse(e.newValue || '{}') });
+          return;
+        }
         if (e.key === 'songDeleted') {
           handleSongDeleted({ detail: JSON.parse(e.newValue || '{}') });
         } else {
@@ -193,6 +206,7 @@ const ArtistsPage = () => {
       window.removeEventListener('songDeleted', handleSongDeleted);
       window.removeEventListener('artistSongCountChanged', handleArtistSongCountChanged);
       window.removeEventListener('artistUpdated', handleArtistUpdate);
+      window.removeEventListener('artistCreated', handleArtistCreated);
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('focus', handleFocus);
       clearInterval(refreshInterval);

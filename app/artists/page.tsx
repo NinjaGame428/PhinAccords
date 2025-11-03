@@ -39,7 +39,9 @@ const ArtistsPage = () => {
       
       try {
         setIsLoading(true);
-        const response = await fetch('/api/artists');
+        // Use cache busting to ensure fresh data
+        const timestamp = Date.now();
+        const response = await fetch(`/api/artists?_t=${timestamp}`);
         
         if (!response.ok) {
           console.error('❌ Error fetching artists');
@@ -93,6 +95,35 @@ const ArtistsPage = () => {
 
     fetchArtists();
     
+    // Listen for artist creation events
+    const handleArtistCreated = (event: any) => {
+      console.log('🎨 Artist created event received, refreshing artist list...', event?.detail);
+      // Refresh immediately when a new artist is created
+      setTimeout(() => fetchArtists(), 100);
+    };
+    
+    window.addEventListener('artistCreated', handleArtistCreated);
+    
+    // Combined handleStorageChange will be defined later after other handlers
+    
+    // Check for artistCreated in localStorage on mount (for same-tab detection)
+    const checkArtistCreated = () => {
+      try {
+        const artistCreatedData = localStorage.getItem('artistCreated');
+        if (artistCreatedData) {
+          const data = JSON.parse(artistCreatedData);
+          // Only refresh if the event is recent (within last 5 seconds)
+          if (Date.now() - data.timestamp < 5000) {
+            setTimeout(() => fetchArtists(), 100);
+          }
+          localStorage.removeItem('artistCreated');
+        }
+      } catch (err) {
+        // Ignore errors
+      }
+    };
+    checkArtistCreated();
+    
     // Listen for song updates and deletions and refresh artist counts
     const handleSongUpdate = (event: any) => {
       console.log('🔄 Song updated, refreshing artist counts...', event?.detail);
@@ -129,8 +160,12 @@ const ArtistsPage = () => {
       setTimeout(() => fetchArtists(), 100);
     };
     
+    // Combined localStorage handler for all events
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'songUpdated' || e.key === 'songDeleted') {
+      if (e.key === 'artistCreated') {
+        console.log('🔄 Artist created (cross-tab), refreshing...');
+        setTimeout(() => fetchArtists(), 100);
+      } else if (e.key === 'songUpdated' || e.key === 'songDeleted') {
         try {
           const updateData = JSON.parse(e.newValue || '{}');
           if (e.key === 'songDeleted') {
@@ -139,11 +174,7 @@ const ArtistsPage = () => {
             handleSongUpdate({ detail: updateData });
           }
         } catch (err) {
-          if (e.key === 'songDeleted') {
-            handleSongDeleted({ detail: {} });
-          } else {
-            handleSongUpdate({ detail: {} });
-          }
+          // Ignore parse errors
         }
       }
     };
@@ -161,10 +192,11 @@ const ArtistsPage = () => {
     window.addEventListener('focus', handleFocus);
     
     return () => {
+      window.removeEventListener('artistCreated', handleArtistCreated);
+      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('songUpdated', handleSongUpdate);
       window.removeEventListener('songDeleted', handleSongDeleted);
       window.removeEventListener('artistSongCountChanged', handleArtistSongCountChanged);
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('focus', handleFocus);
     };
   }, []);
@@ -206,8 +238,6 @@ const ArtistsPage = () => {
                   // Navigate to the selected artist
                   window.location.href = getTranslatedRoute(`/artists/${result.id}`, language);
                 }}
-                showFilters={true}
-                showSort={true}
               />
             </div>
 

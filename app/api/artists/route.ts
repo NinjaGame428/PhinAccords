@@ -134,6 +134,9 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
 
+    // Check for cache-busting parameter
+    const noCache = searchParams.get('_t') || searchParams.get('nocache');
+    
     const response = NextResponse.json({ 
       artists: artists || [],
       pagination: {
@@ -144,7 +147,14 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    // Use no-cache if cache busting is requested, otherwise use short cache
+    if (noCache) {
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+    } else {
+      response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+    }
     
     return response;
   } catch (error: any) {
