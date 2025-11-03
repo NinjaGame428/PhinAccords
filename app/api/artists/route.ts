@@ -11,8 +11,65 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Artist name is required' }, { status: 400 });
     }
 
+    // Get authenticated user
+    const { getCurrentUser } = await import('@/lib/auth');
+    const currentUser = await getCurrentUser();
+    
+    if (!currentUser) {
+      return NextResponse.json({ 
+        error: 'Unauthorized',
+        details: 'You must be logged in to create artists'
+      }, { status: 401 });
+    }
+
+    // Check if user is admin
     const serverClient = createServerClient();
-    const { data: artistData, error } = await serverClient
+    const { data: userProfile } = await serverClient
+      .from('users')
+      .select('role')
+      .eq('id', currentUser.id)
+      .single();
+    
+    const isAdmin = userProfile?.role === 'admin';
+    
+    if (!isAdmin) {
+      return NextResponse.json({ 
+        error: 'Forbidden',
+        details: 'Only administrators can create artists'
+      }, { status: 403 });
+    }
+
+    // Create authenticated client with user session for RLS policies
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('sb-access-token')?.value;
+    
+    if (!accessToken) {
+      return NextResponse.json({ 
+        error: 'Unauthorized',
+        details: 'Session token not found'
+      }, { status: 401 });
+    }
+
+    // Create authenticated client using the user's session token
+    const { createClient } = await import('@supabase/supabase-js');
+    const authenticatedClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        },
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false
+        }
+      }
+    );
+
+    const { data: artistData, error } = await authenticatedClient
       .from('artists')
       .insert({
         name: name.trim(),
@@ -31,7 +88,9 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    return NextResponse.json({ artist: artistData }, { status: 201 });
+    const response = NextResponse.json({ artist: artistData }, { status: 201 });
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    return response;
   } catch (error: any) {
     console.error('❌ Error creating artist:', {
       message: error.message,

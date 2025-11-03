@@ -216,19 +216,76 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // Get authenticated user
+    const { getCurrentUser } = await import('@/lib/auth');
+    const currentUser = await getCurrentUser();
+    
+    if (!currentUser) {
+      return NextResponse.json({ 
+        error: 'Unauthorized',
+        details: 'You must be logged in to create songs'
+      }, { status: 401 });
+    }
+
+    // Check if user is admin
+    const serverClient = createServerClient();
+    const { data: userProfile } = await serverClient
+      .from('users')
+      .select('role')
+      .eq('id', currentUser.id)
+      .single();
+    
+    const isAdmin = userProfile?.role === 'admin';
+    
+    if (!isAdmin) {
+      return NextResponse.json({ 
+        error: 'Forbidden',
+        details: 'Only administrators can create songs'
+      }, { status: 403 });
+    }
+
+    // Create authenticated client with user session for RLS policies
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('sb-access-token')?.value;
+    
+    if (!accessToken) {
+      return NextResponse.json({ 
+        error: 'Unauthorized',
+        details: 'Session token not found'
+      }, { status: 401 });
+    }
+
+    // Create authenticated client using the user's session token
+    const { createClient } = await import('@supabase/supabase-js');
+    const authenticatedClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        },
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false
+        }
+      }
+    );
+
     const trimmedTitle = title.trim();
     const trimmedArtistId = artist_id.trim();
-    const serverClient = createServerClient();
 
     // Fetch artist name
-    const { data: artist } = await serverClient
+    const { data: artist } = await authenticatedClient
       .from('artists')
       .select('name')
       .eq('id', trimmedArtistId)
       .single();
 
     // Insert song
-    const { data: songData, error } = await serverClient
+    const { data: songData, error } = await authenticatedClient
       .from('songs')
       .insert({
         title: trimmedTitle,
@@ -257,7 +314,7 @@ export async function POST(request: NextRequest) {
     let artistInfo = null;
     if (songData.artist_id) {
       try {
-        const { data: artist } = await serverClient
+        const { data: artist } = await authenticatedClient
           .from('artists')
           .select('id, name, bio, image_url')
           .eq('id', songData.artist_id)
