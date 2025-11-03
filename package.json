@@ -10,7 +10,8 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "analyze": "cross-env ANALYZE=true next build",
-    "performance": "next build && next start"
+    "performance": "next build && next start",
+    "generate-piano-diagrams": "node scripts/generate-piano-chord-diagrams.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",

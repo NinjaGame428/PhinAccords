@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
     let query = serverClient
       .from('piano_chords')
       .select('*')
+      // Prioritize root position chords (inversion = 0) first
+      .order('inversion', { ascending: true })
       .order('chord_name', { ascending: true });
 
     if (keySignature) {
