@@ -1,7 +1,9 @@
 /**
  * Utility functions for chord name conversion between languages
- * and chord transposition
+ * and chord transposition using tonal library
  */
+
+import { Chord, Note } from 'tonal';
 
 // Convert English chord name to French
 export const englishToFrenchChord = (chordName: string): string => {
@@ -133,9 +135,116 @@ export const getKeyFromIndex = (index: number, preferSharp: boolean = true): str
 };
 
 /**
- * Transpose a chord name by a certain number of semitones
+ * Transpose a chord name using tonal library
+ * @param chordName - Chord name (e.g., "C", "Cm", "C7", "Cmaj7", etc.)
+ * @param semitones - Number of semitones to transpose (can be negative)
+ * @returns Transposed chord name
  */
 export const transposeChord = (chordName: string, semitones: number): string => {
+  // Handle empty or invalid chord names
+  if (!chordName || typeof chordName !== 'string' || semitones === 0) {
+    return chordName;
+  }
+
+  // French to English mapping
+  const frenchToEnglish: { [key: string]: string } = {
+    'Do': 'C', 'Do#': 'C#', 'Ré♭': 'Db', 'Ré': 'D', 'Ré#': 'D#',
+    'Mi♭': 'Eb', 'Mi': 'E', 'Fa': 'F', 'Fa#': 'F#', 'Sol♭': 'Gb',
+    'Sol': 'G', 'Sol#': 'G#', 'La♭': 'Ab', 'La': 'A', 'La#': 'A#',
+    'Si♭': 'Bb', 'Si': 'B',
+  };
+
+  // Check if chord name starts with French notation
+  let isFrench = false;
+  let englishChord = chordName;
+  
+  for (const [french, english] of Object.entries(frenchToEnglish)) {
+    if (chordName.startsWith(french)) {
+      isFrench = true;
+      englishChord = english + chordName.substring(french.length);
+      break;
+    }
+  }
+
+  // If no French match, extract English root and suffix
+  if (!isFrench) {
+    const match = chordName.match(/^([A-G][#b]?)(.*)$/);
+    if (!match) {
+      // If no match, try tonal's Chord.transpose directly
+      try {
+        const transposed = Chord.transpose(chordName, `${semitones > 0 ? '+' : ''}${semitones}`);
+        return transposed || chordName;
+      } catch {
+        return chordName;
+      }
+    }
+    englishChord = chordName;
+  }
+
+  // Use tonal to transpose
+  let transposedEnglish: string;
+  try {
+    // Get chord info to preserve chord type
+    const chordInfo = Chord.get(englishChord);
+    const interval = `${semitones > 0 ? '+' : ''}${semitones}`;
+    
+    if (chordInfo.empty || !chordInfo.tonic) {
+      // If chord is not recognized, try transposing just the root note
+      const rootMatch = englishChord.match(/^([A-G][#b]?)/);
+      if (rootMatch) {
+        const root = rootMatch[1];
+        const suffix = englishChord.substring(root.length);
+        const transposedRoot = Note.transpose(root, interval);
+        transposedEnglish = transposedRoot + suffix;
+      } else {
+        transposedEnglish = englishChord;
+      }
+    } else {
+      // Transpose the tonic
+      const transposedTonic = Note.transpose(chordInfo.tonic, interval);
+      
+      // Reconstruct chord symbol
+      if (chordInfo.type && transposedTonic) {
+        const newChord = Chord.getChord(chordInfo.type, transposedTonic);
+        transposedEnglish = newChord.symbol || (transposedTonic + englishChord.substring(chordInfo.tonic.length));
+      } else {
+        // Just transpose root if no type
+        const rootLength = chordInfo.tonic?.length || 0;
+        transposedEnglish = transposedTonic + englishChord.substring(rootLength);
+      }
+    }
+  } catch (error) {
+    console.error('Error transposing chord with tonal:', error);
+    // Fallback to simple semitone calculation
+    return transposeChordFallback(chordName, semitones);
+  }
+
+  // Convert back to French if original was French
+  if (isFrench) {
+    const englishToFrench: { [key: string]: string } = {
+      'C': 'Do', 'C#': 'Do#', 'Db': 'Ré♭', 'D': 'Ré', 'D#': 'Ré#',
+      'Eb': 'Mi♭', 'E': 'Mi', 'F': 'Fa', 'F#': 'Fa#', 'Gb': 'Sol♭',
+      'G': 'Sol', 'G#': 'Sol#', 'Ab': 'La♭', 'A': 'La', 'A#': 'La#',
+      'Bb': 'Si♭', 'B': 'Si',
+    };
+    
+    // Extract transposed root note
+    const transposedRootMatch = transposedEnglish.match(/^([A-G][#b]?)/);
+    if (transposedRootMatch) {
+      const transposedRootNote = transposedRootMatch[1];
+      const transposedSuffix = transposedEnglish.substring(transposedRootNote.length);
+      const frenchRoot = englishToFrench[transposedRootNote] || transposedRootNote;
+      return frenchRoot + transposedSuffix;
+    }
+  }
+
+  return transposedEnglish;
+};
+
+/**
+ * Fallback transposition method using semitone calculation
+ */
+const transposeChordFallback = (chordName: string, semitones: number): string => {
   // Extract root note and suffix
   const chordMatch = chordName.match(/^([A-G][#b]?|Do|Ré|Mi|Fa|Sol|La|Si|Do#|Ré#|Fa#|Sol#|La#|Ré♭|Mi♭|Sol♭|La♭|Si♭)(.*)$/);
   if (!chordMatch) return chordName;
@@ -143,8 +252,7 @@ export const transposeChord = (chordName: string, semitones: number): string => 
   const rootNote = chordMatch[1];
   const suffix = chordMatch[2];
   
-  // Convert French to English if needed for calculation
-  let englishRoot = rootNote;
+  // Convert French to English if needed
   const frenchToEnglish: { [key: string]: string } = {
     'Do': 'C', 'Do#': 'C#', 'Ré♭': 'Db', 'Ré': 'D', 'Ré#': 'D#',
     'Mi♭': 'Eb', 'Mi': 'E', 'Fa': 'F', 'Fa#': 'F#', 'Sol♭': 'Gb',
@@ -152,30 +260,14 @@ export const transposeChord = (chordName: string, semitones: number): string => 
     'Si♭': 'Bb', 'Si': 'B',
   };
   
-  if (frenchToEnglish[rootNote]) {
-    englishRoot = frenchToEnglish[rootNote];
-  }
-  
-  // Get current index
+  const englishRoot = frenchToEnglish[rootNote] || rootNote;
   const currentIndex = getSemitoneIndex(englishRoot);
-  if (currentIndex === undefined) return chordName;
-  
-  // Calculate new index
   const newIndex = (currentIndex + semitones + 12) % 12;
   
-  // Determine if we should use sharp or flat based on original
   const preferSharp = englishRoot.includes('#');
-  const preferFlat = englishRoot.includes('b') || englishRoot === 'Db' || englishRoot === 'Eb' || englishRoot === 'Gb' || englishRoot === 'Ab' || englishRoot === 'Bb';
+  const newRoot = getKeyFromIndex(newIndex, preferSharp);
   
-  // Get new root note (in same language as original)
-  let newRoot: string;
-  if (preferFlat && !preferSharp) {
-    newRoot = getKeyFromIndex(newIndex, false);
-  } else {
-    newRoot = getKeyFromIndex(newIndex, true);
-  }
-  
-  // If original was French, convert back to French
+  // Convert back to French if original was French
   if (frenchToEnglish[rootNote]) {
     const englishToFrench: { [key: string]: string } = {
       'C': 'Do', 'C#': 'Do#', 'Db': 'Ré♭', 'D': 'Ré', 'D#': 'Ré#',
@@ -183,7 +275,8 @@ export const transposeChord = (chordName: string, semitones: number): string => 
       'G': 'Sol', 'G#': 'Sol#', 'Ab': 'La♭', 'A': 'La', 'A#': 'La#',
       'Bb': 'Si♭', 'B': 'Si',
     };
-    newRoot = englishToFrench[newRoot] || newRoot;
+    const frenchRoot = englishToFrench[newRoot] || newRoot;
+    return frenchRoot + suffix;
   }
   
   return newRoot + suffix;

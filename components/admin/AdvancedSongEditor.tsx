@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { convertChordArray, transposeChord as transposeChordUtil, getSemitoneIndex, frenchToEnglishChord } from '@/lib/chord-utils';
+import { Interval } from 'tonal';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -452,9 +453,32 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
     if (typeof targetKeyOrSemitones === 'string') {
       // Called with a target key (e.g., "D#")
       const originalKey = songData.key || 'C';
-      const originalIndex = getSemitoneIndex(originalKey);
-      const targetIndex = getSemitoneIndex(targetKeyOrSemitones);
-      semitones = targetIndex - originalIndex;
+      
+      // Use tonal to calculate interval between keys
+      try {
+        // Convert French keys to English for tonal
+        const englishOriginalKey = frenchToEnglishChord(originalKey) || originalKey;
+        const englishTargetKey = frenchToEnglishChord(targetKeyOrSemitones) || targetKeyOrSemitones;
+        
+        // Calculate interval using tonal
+        const interval = Interval.distance(englishOriginalKey, englishTargetKey);
+        if (interval) {
+          // Convert interval to semitones
+          const semitonesFromInterval = Interval.semitones(interval) || 0;
+          semitones = semitonesFromInterval;
+        } else {
+          // Fallback to manual calculation
+          const originalIndex = getSemitoneIndex(originalKey);
+          const targetIndex = getSemitoneIndex(targetKeyOrSemitones);
+          semitones = targetIndex - originalIndex;
+        }
+      } catch (error) {
+        console.error('Error calculating interval with tonal:', error);
+        // Fallback to manual calculation
+        const originalIndex = getSemitoneIndex(originalKey);
+        const targetIndex = getSemitoneIndex(targetKeyOrSemitones);
+        semitones = targetIndex - originalIndex;
+      }
       
       // Update song key
       setSongData(prev => ({ ...prev, key: targetKeyOrSemitones }));

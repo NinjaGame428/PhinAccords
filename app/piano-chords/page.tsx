@@ -190,9 +190,29 @@ const PianoChordsPage = () => {
         const data = await response.json();
         const dbChords = data.chords || [];
 
-        // Group chords by root_name (to show all inversions together)
-        const chordGroups = new Map<string, any[]>();
+        // Remove duplicates based on chord_name and inversion combination
+        const uniqueChordsMap = new Map<string, any>();
         dbChords.forEach((chord: any) => {
+          // Create a unique key: root_name + inversion
+          const rootName = chord.root_name || chord.chord_name;
+          const inversion = chord.inversion ?? 0;
+          const uniqueKey = `${rootName}_${inversion}`;
+          
+          // Keep only the first occurrence (prioritize root position)
+          if (!uniqueChordsMap.has(uniqueKey)) {
+            uniqueChordsMap.set(uniqueKey, chord);
+          } else {
+            // If duplicate found, prefer root position (inversion = 0)
+            const existing = uniqueChordsMap.get(uniqueKey);
+            if (chord.inversion === 0 && existing.inversion !== 0) {
+              uniqueChordsMap.set(uniqueKey, chord);
+            }
+          }
+        });
+
+        // Group unique chords by root_name (to show all inversions together)
+        const chordGroups = new Map<string, any[]>();
+        uniqueChordsMap.forEach((chord: any) => {
           const rootName = chord.root_name || chord.chord_name;
           if (!chordGroups.has(rootName)) {
             chordGroups.set(rootName, []);
@@ -200,10 +220,24 @@ const PianoChordsPage = () => {
           chordGroups.get(rootName)!.push(chord);
         });
 
-        // Convert database format to component format
+        // Convert database format to component format and remove duplicate inversions
         const chordsArray: Chord[] = Array.from(chordGroups.entries()).map(([rootName, chordVariations]) => {
+          // Remove duplicate inversions (keep only one per inversion number)
+          const uniqueInversions = new Map<number, any>();
+          chordVariations.forEach((c: any) => {
+            const inversion = c.inversion ?? 0;
+            if (!uniqueInversions.has(inversion)) {
+              uniqueInversions.set(inversion, c);
+            }
+          });
+          
+          // Sort inversions by number
+          const sortedVariations = Array.from(uniqueInversions.values()).sort((a, b) => {
+            return (a.inversion ?? 0) - (b.inversion ?? 0);
+          });
+
           // Get root position chord (inversion = 0) as primary
-          const rootChord = chordVariations.find((c: any) => c.inversion === 0) || chordVariations[0];
+          const rootChord = sortedVariations.find((c: any) => c.inversion === 0) || sortedVariations[0];
           
           // Extract root note for key
           const rootNoteMatch = rootName.match(/^([A-G][#b]?)/);
@@ -213,7 +247,7 @@ const PianoChordsPage = () => {
             name: rootName,
             key: rootNote,
             difficulty: (rootChord.difficulty || 'Medium') as 'Easy' | 'Medium' | 'Hard',
-            pianoChords: chordVariations.map((c: any) => ({
+            pianoChords: sortedVariations.map((c: any) => ({
               name: c.inversion === 0 ? 'Root Position' : 
                     c.inversion === 1 ? 'First Inversion' :
                     c.inversion === 2 ? 'Second Inversion' :

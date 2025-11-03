@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getTranslatedRoute } from '@/lib/url-translations';
 import { transposeChord as transposeChordUtil, getSemitoneIndex, getKeyFromIndex, frenchToEnglishChord, englishToFrenchChord } from '@/lib/chord-utils';
+import { Interval } from 'tonal';
 import { PianoChordTooltip } from '@/components/ui/piano-chord-tooltip';
 import '@/components/ui/rich-text-editor.css';
 import {
@@ -139,17 +140,38 @@ const SongDetailsPage = () => {
     if (!song || !song.lyrics) return;
     
     const originalKey = song.key_signature || 'C';
-    const originalIndex = getSemitoneIndex(originalKey);
-    const targetIndex = getSemitoneIndex(targetKey);
-    const semitones = targetIndex - originalIndex;
+    
+    // Use tonal to calculate interval between keys
+    let semitones = 0;
+    try {
+      // Convert French keys to English for tonal
+      const englishOriginalKey = frenchToEnglishChord(originalKey) || originalKey;
+      const englishTargetKey = frenchToEnglishChord(targetKey) || targetKey;
+      
+      // Calculate interval using tonal
+      const interval = Interval.distance(englishOriginalKey, englishTargetKey);
+      if (interval) {
+        // Convert interval to semitones
+        const semitonesFromInterval = Interval.semitones(interval) || 0;
+        semitones = semitonesFromInterval;
+      } else {
+        // Fallback to manual calculation
+        const originalIndex = getSemitoneIndex(originalKey);
+        const targetIndex = getSemitoneIndex(targetKey);
+        semitones = targetIndex - originalIndex;
+      }
+    } catch (error) {
+      console.error('Error calculating interval with tonal:', error);
+      // Fallback to manual calculation
+      const originalIndex = getSemitoneIndex(originalKey);
+      const targetIndex = getSemitoneIndex(targetKey);
+      semitones = targetIndex - originalIndex;
+    }
     
     console.log('🎹 Transposing:', {
       originalKey,
-      originalIndex,
       targetKey,
-      targetIndex,
       semitones,
-      calculatedTarget: getKeyFromIndex(targetIndex, true)
     });
     
     if (semitones === 0) {
