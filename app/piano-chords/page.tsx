@@ -211,9 +211,21 @@ const PianoChordsPage = () => {
         });
 
         // Group unique chords by root_name (to show all inversions together)
+        // Use the uniqueChordNamesMap to ensure we don't add duplicates
         const chordGroups = new Map<string, any[]>();
+        const processedChordNames = new Set<string>();
+        
         uniqueChordsMap.forEach((chord: any) => {
+          const chordName = chord.chord_name;
+          
+          // Skip if we've already processed this exact chord name
+          if (processedChordNames.has(chordName)) {
+            return;
+          }
+          
+          processedChordNames.add(chordName);
           const rootName = chord.root_name || chord.chord_name;
+          
           if (!chordGroups.has(rootName)) {
             chordGroups.set(rootName, []);
           }
