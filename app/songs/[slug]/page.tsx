@@ -12,6 +12,7 @@ import Footer from '@/components/footer';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getTranslatedRoute } from '@/lib/url-translations';
+import { transposeChord as transposeChordUtil, getSemitoneIndex, getKeyFromIndex, frenchToEnglishChord, englishToFrenchChord } from '@/lib/chord-utils';
 import { PianoChordTooltip } from '@/components/ui/piano-chord-tooltip';
 import '@/components/ui/rich-text-editor.css';
 import {
@@ -163,17 +164,49 @@ const SongDetailsPage = () => {
     const chordSpanPattern = /<span\s+class="chord"[^>]*>\[([^\]]+)\]<\/span>/gi;
     
     transposedHtml = transposedHtml.replace(chordSpanPattern, (match: string, chordName: string) => {
-      const transposed = transposeChord(chordName.trim(), semitones);
+      // Convert French to English if needed for transposition
+      let englishChord = chordName.trim();
+      if (language === 'fr') {
+        englishChord = frenchToEnglishChord(chordName.trim()) || chordName.trim();
+      }
+      
+      // Transpose in English
+      const transposedEnglish = transposeChordUtil(englishChord, semitones);
+      
+      // Convert back to French if needed for display
+      let transposed = transposedEnglish;
+      if (language === 'fr') {
+        transposed = englishToFrenchChord(transposedEnglish) || transposedEnglish;
+      }
+      
       // Preserve the original span attributes
       return match.replace(/\[([^\]]+)\]/, `[${transposed}]`);
     });
     
     // Also handle any standalone chord patterns in brackets
-    const standaloneChordPattern = /\[([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|7|9|11|13)?(?:\/[A-G][#b]?)?)\]/gi;
+    // Match chord names in [brackets], supporting both English and French note names
+    const chordNotePattern = '[A-G][#b]?|Do|Ré|Mi|Fa|Sol|La|Si|Do#|Ré#|Fa#|Sol#|La#|Ré♭|Mi♭|Sol♭|La♭|Si♭';
+    const chordSuffixPattern = '(?:m|maj|min|dim|aug|sus|add|7|9|11|13)?';
+    const chordSlashPattern = `(?:\\/${chordNotePattern})?`;
+    const standaloneChordPattern = new RegExp(`\\[(${chordNotePattern})${chordSuffixPattern}${chordSlashPattern})\\]`, 'gi');
     transposedHtml = transposedHtml.replace(standaloneChordPattern, (match: string, chordName: string) => {
       // Only replace if not already inside a chord span
       if (!match.includes('class="chord"')) {
-        const transposed = transposeChord(chordName, semitones);
+        // Convert French to English if needed
+        let englishChord = chordName;
+        if (language === 'fr') {
+          englishChord = frenchToEnglishChord(chordName) || chordName;
+        }
+        
+        // Transpose
+        const transposedEnglish = transposeChordUtil(englishChord, semitones);
+        
+        // Convert back to French if needed
+        let transposed = transposedEnglish;
+        if (language === 'fr') {
+          transposed = englishToFrenchChord(transposedEnglish) || transposedEnglish;
+        }
+        
         return `[${transposed}]`;
       }
       return match;

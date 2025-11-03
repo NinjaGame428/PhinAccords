@@ -37,6 +37,8 @@ interface PianoChord {
   notes: string[];
   fingers: number[];
   description: string;
+  chordId?: string;
+  inversion?: number;
 }
 
 interface Chord {
@@ -134,96 +136,104 @@ const PianoChordsPage = () => {
     ? [t('chord.allLevels'), t('chord.easy'), t('chord.medium'), t('chord.hard')]
     : [t('chord.allLevels'), t('chord.easy'), t('chord.medium'), t('chord.hard')];
 
-  // Generate comprehensive list of piano chords
+  // Fetch piano chords from database
   useEffect(() => {
-    const generatePianoChords = () => {
-      console.log('🎹 Generating comprehensive piano chords list...');
+    const fetchPianoChords = async () => {
+      console.log('🎹 Fetching piano chords from database...');
       setIsLoading(true);
 
       try {
-        // Define all root notes
-        const roots = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
-        
-        // Define chord types and their difficulty
-        const chordTypes = [
-          { type: '', suffix: '', difficulty: 'Easy' as const, category: 'Major', description: 'Major triad' },
-          { type: 'm', suffix: 'm', difficulty: 'Easy' as const, category: 'Minor', description: 'Minor triad' },
-          { type: 'dim', suffix: 'dim', difficulty: 'Medium' as const, category: 'Diminished', description: 'Diminished triad' },
-          { type: 'aug', suffix: 'aug', difficulty: 'Medium' as const, category: 'Augmented', description: 'Augmented triad' },
-          { type: 'sus2', suffix: 'sus2', difficulty: 'Medium' as const, category: 'Suspended', description: 'Suspended 2nd' },
-          { type: 'sus4', suffix: 'sus4', difficulty: 'Medium' as const, category: 'Suspended', description: 'Suspended 4th' },
-          { type: '7', suffix: '7', difficulty: 'Medium' as const, category: 'Dominant 7th', description: 'Dominant 7th' },
-          { type: 'maj7', suffix: 'maj7', difficulty: 'Medium' as const, category: 'Major 7th', description: 'Major 7th' },
-          { type: 'm7', suffix: 'm7', difficulty: 'Medium' as const, category: 'Minor 7th', description: 'Minor 7th' },
-          { type: 'maj9', suffix: 'maj9', difficulty: 'Hard' as const, category: 'Extended', description: 'Major 9th' },
-          { type: '9', suffix: '9', difficulty: 'Hard' as const, category: 'Extended', description: 'Dominant 9th' },
-          { type: 'm9', suffix: 'm9', difficulty: 'Hard' as const, category: 'Extended', description: 'Minor 9th' },
-          { type: 'add9', suffix: 'add9', difficulty: 'Medium' as const, category: 'Add', description: 'Add 9th' },
-          { type: '6', suffix: '6', difficulty: 'Easy' as const, category: 'Sixth', description: 'Major 6th' },
-          { type: 'm6', suffix: 'm6', difficulty: 'Medium' as const, category: 'Sixth', description: 'Minor 6th' },
-          { type: '7sus4', suffix: '7sus4', difficulty: 'Medium' as const, category: 'Suspended', description: '7th suspended 4th' },
-          { type: '7#5', suffix: '7#5', difficulty: 'Hard' as const, category: 'Altered', description: '7th sharp 5th' },
-          { type: '7b5', suffix: '7b5', difficulty: 'Hard' as const, category: 'Altered', description: '7th flat 5th' },
-          { type: 'dim7', suffix: 'dim7', difficulty: 'Hard' as const, category: 'Diminished', description: 'Diminished 7th' },
-        ];
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (selectedKey && selectedKey !== t('chord.allKeys') && selectedKey !== 'All Keys' && selectedKey !== 'Toutes les Tonalités') {
+          // Map language-specific key names to English
+          const keyMap: { [key: string]: string } = {
+            [t('piano.key.C')]: 'C',
+            [t('piano.key.C#')]: 'C#',
+            [t('piano.key.Db')]: 'Db',
+            [t('piano.key.D')]: 'D',
+            [t('piano.key.D#')]: 'D#',
+            [t('piano.key.Eb')]: 'Eb',
+            [t('piano.key.E')]: 'E',
+            [t('piano.key.F')]: 'F',
+            [t('piano.key.F#')]: 'F#',
+            [t('piano.key.Gb')]: 'Gb',
+            [t('piano.key.G')]: 'G',
+            [t('piano.key.G#')]: 'G#',
+            [t('piano.key.Ab')]: 'Ab',
+            [t('piano.key.A')]: 'A',
+            [t('piano.key.A#')]: 'A#',
+            [t('piano.key.Bb')]: 'Bb',
+            [t('piano.key.B')]: 'B',
+          };
+          const englishKey = keyMap[selectedKey] || selectedKey;
+          params.append('key', englishKey);
+        }
+        if (selectedDifficulty && selectedDifficulty !== t('chord.allLevels') && selectedDifficulty !== 'All Levels' && selectedDifficulty !== 'Tous les Niveaux') {
+          const difficultyMap: { [key: string]: string } = {
+            [t('chord.easy')]: 'Easy',
+            [t('chord.medium')]: 'Medium',
+            [t('chord.hard')]: 'Hard',
+            'Facile': 'Easy',
+            'Moyen': 'Medium',
+            'Difficile': 'Hard',
+          };
+          const englishDifficulty = difficultyMap[selectedDifficulty] || selectedDifficulty;
+          params.append('difficulty', englishDifficulty);
+        }
 
-        // Generate all chord combinations
-        const chordMap = new Map<string, Chord>();
+        const response = await fetch(`/api/piano-chords?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch piano chords');
+        }
 
-        roots.forEach(root => {
-          chordTypes.forEach(chordType => {
-            // Skip enharmonic duplicates (use sharp or flat based on root)
-            const useSharp = root.includes('#');
-            const useFlat = root.includes('b');
-            
-            let chordName = root + chordType.suffix;
-            
-            // Handle enharmonic equivalents
-            if (root === 'Db' && !chordType.type) chordName = 'Db' + chordType.suffix;
-            if (root === 'Eb' && !chordType.type) chordName = 'Eb' + chordType.suffix;
-            if (root === 'Gb' && !chordType.type) chordName = 'Gb' + chordType.suffix;
-            if (root === 'Ab' && !chordType.type) chordName = 'Ab' + chordType.suffix;
-            if (root === 'Bb' && !chordType.type) chordName = 'Bb' + chordType.suffix;
+        const data = await response.json();
+        const dbChords = data.chords || [];
 
-            // Extract root note (handle sharps/flats)
-            let rootNote = root;
-            if (root.length === 2) {
-              // Single character with sharp/flat (e.g., 'C#', 'Db')
-              rootNote = root;
-            } else if (root.length === 1) {
-              // Just the root note (e.g., 'C', 'D')
-              rootNote = root;
-            } else {
-              // Fallback - use first character
-              rootNote = root[0];
-            }
+        // Group chords by root_name (to show all inversions together)
+        const chordGroups = new Map<string, any[]>();
+        dbChords.forEach((chord: any) => {
+          const rootName = chord.root_name || chord.chord_name;
+          if (!chordGroups.has(rootName)) {
+            chordGroups.set(rootName, []);
+          }
+          chordGroups.get(rootName)!.push(chord);
+        });
 
-            if (!chordMap.has(chordName)) {
-              // Generate notes for display (simplified - actual notes will come from API)
-              const notes: string[] = []; // Notes will be displayed by scales-chords API
+        // Convert database format to component format
+        const chordsArray: Chord[] = Array.from(chordGroups.entries()).map(([rootName, chordVariations]) => {
+          // Get root position chord (inversion = 0) as primary
+          const rootChord = chordVariations.find((c: any) => c.inversion === 0) || chordVariations[0];
+          
+          // Extract root note for key
+          const rootNoteMatch = rootName.match(/^([A-G][#b]?)/);
+          const rootNote = rootNoteMatch ? rootNoteMatch[1] : 'C';
 
-              chordMap.set(chordName, {
-                name: chordName,
-                key: rootNote,
-                difficulty: chordType.difficulty,
-                pianoChords: [{
-                  name: 'Root Position',
-                  notes: notes,
-                  fingers: [1, 3, 5],
-                  description: chordType.description
-                }],
-                description: chordType.description,
-                commonUses: [],
-                alternativeNames: [],
-                category: chordType.category
-              });
-            }
-          });
+          return {
+            name: rootName,
+            key: rootNote,
+            difficulty: (rootChord.difficulty || 'Medium') as 'Easy' | 'Medium' | 'Hard',
+            pianoChords: chordVariations.map((c: any) => ({
+              name: c.inversion === 0 ? 'Root Position' : 
+                    c.inversion === 1 ? 'First Inversion' :
+                    c.inversion === 2 ? 'Second Inversion' :
+                    c.inversion === 3 ? 'Third Inversion' : 'Inversion',
+              notes: c.notes || [],
+              fingers: c.finger_positions || [1, 3, 5],
+              description: c.description || '',
+              chordId: c.id, // Store database ID for reference
+              inversion: c.inversion || 0,
+            })),
+            description: rootChord.description || '',
+            commonUses: [],
+            alternativeNames: [],
+            category: rootChord.chord_type || 'Chord'
+          };
         });
 
         // Sort chords in musical order
         const musicalOrder = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
-        const chordsArray = Array.from(chordMap.values()).sort((a, b) => {
+        chordsArray.sort((a, b) => {
           const aRoot = a.key;
           const bRoot = b.key;
           const aIndex = musicalOrder.indexOf(aRoot);
@@ -236,17 +246,17 @@ const PianoChordsPage = () => {
           return a.name.localeCompare(b.name);
         });
         
-        console.log(`✅ Generated ${chordsArray.length} piano chords`);
+        console.log(`✅ Fetched ${chordsArray.length} piano chord groups from database`);
         setChords(chordsArray);
       } catch (error) {
-        console.error('❌ Error generating chords:', error);
+        console.error('❌ Error fetching chords:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    generatePianoChords();
-  }, []);
+    fetchPianoChords();
+  }, [selectedKey, selectedDifficulty, t]);
 
   // Filter chords - only show chords that have piano chords
   const filteredChords = chords.filter(chord => {

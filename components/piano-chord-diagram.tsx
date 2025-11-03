@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, Pause, Download, Printer, Share2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { playChord, stopAll } from "@/lib/tone-sampler";
 
 interface PianoChordDiagramProps {
   chordName: string;
@@ -151,11 +152,55 @@ const PianoChordDiagram = ({
   const [apiReady, setApiReady] = useState(false);
   const [chordInitialized, setChordInitialized] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [isTonePlaying, setIsTonePlaying] = useState(false);
   
   // Extract notes from chord name if not provided
   const notes = propNotes && propNotes.length > 0 
     ? propNotes 
     : extractNotesFromChord(chordName);
+  
+  // Handle Tone.js playback
+  const handleTonePlay = async () => {
+    if (!notes || notes.length === 0) {
+      console.warn('No notes available to play');
+      return;
+    }
+
+    try {
+      if (isTonePlaying) {
+        // Stop playing
+        stopAll();
+        setIsTonePlaying(false);
+        if (onStop) onStop();
+      } else {
+        // Start playing
+        setIsTonePlaying(true);
+        if (onPlay) onPlay();
+        
+        // Play chord using Tone.js
+        await playChord(notes, 2, 4);
+        
+        // Reset playing state after duration
+        setTimeout(() => {
+          setIsTonePlaying(false);
+          if (onStop) onStop();
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error playing chord with Tone.js:', error);
+      setIsTonePlaying(false);
+      if (onStop) onStop();
+    }
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (isTonePlaying) {
+        stopAll();
+      }
+    };
+  }, [isTonePlaying]);
 
   // Check if Scales-Chords API is loaded
   useEffect(() => {
@@ -680,6 +725,28 @@ const PianoChordDiagram = ({
             <CardDescription className="text-center mt-1">{description}</CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            {/* Tone.js Play Button */}
+            {notes && notes.length > 0 && (
+              <Button
+                variant={isTonePlaying ? "default" : "outline"}
+                size="sm"
+                onClick={handleTonePlay}
+                className="flex items-center gap-2"
+                aria-label={isTonePlaying ? "Stop chord" : "Play chord"}
+              >
+                {isTonePlaying ? (
+                  <>
+                    <Pause className="h-4 w-4" />
+                    <span className="hidden sm:inline">Stop</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4" />
+                    <span className="hidden sm:inline">Play</span>
+                  </>
+                )}
+              </Button>
+            )}
             <Badge className={getDifficultyColor(difficulty)}>
               {getDifficultyText(difficulty)}
             </Badge>

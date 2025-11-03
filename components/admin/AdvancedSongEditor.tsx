@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { convertChordArray, transposeChord as transposeChordUtil, getSemitoneIndex, frenchToEnglishChord } from '@/lib/chord-utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Music, 
   Save, 
@@ -124,7 +126,8 @@ interface SongData {
   language: string;
 }
 
-const commonChords = [
+// Base chords in English (stored internally as English)
+const commonChordsEnglish = [
   'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B',
   'Cm', 'C#m', 'Dbm', 'Dm', 'D#m', 'Ebm', 'Em', 'Fm', 'F#m', 'Gbm', 'Gm', 'G#m', 'Abm', 'Am', 'A#m', 'Bbm', 'Bm',
   'C7', 'C#7', 'Db7', 'D7', 'D#7', 'Eb7', 'E7', 'F7', 'F#7', 'Gb7', 'G7', 'G#7', 'Ab7', 'A7', 'A#7', 'Bb7', 'B7',
@@ -149,6 +152,8 @@ const sectionTypes = [
 ];
 
 export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
+  const { language } = useLanguage();
+  
   const [songData, setSongData] = useState<SongData>({
     id: songId,
     title: '',
@@ -165,6 +170,11 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
     mood: '',
     language: 'en'
   });
+  
+  // Get chords in current language
+  const commonChords = React.useMemo(() => {
+    return convertChordArray(commonChordsEnglish, language);
+  }, [language]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -190,7 +200,7 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
   
   const editorRef = useRef<HTMLDivElement>(null);
   const chordInputRef = useRef<HTMLInputElement>(null);
-  const autoSaveRef = useRef<NodeJS.Timeout>();
+  const autoSaveRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   // Load song data - only on mount or when songId changes
   useEffect(() => {
@@ -386,10 +396,14 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
   };
 
   const validateChord = (chordName: string): boolean => {
-    return commonChords.includes(chordName);
+    // Convert to English for validation (chords stored in English)
+    const englishChord = language === 'fr' ? frenchToEnglishChord(chordName) : chordName;
+    return commonChordsEnglish.includes(englishChord);
   };
 
   const insertChord = (chordName: string) => {
+    // Store chord in English internally (for database consistency)
+    const englishChord = language === 'fr' ? frenchToEnglishChord(chordName) : chordName;
     if (editorRef.current) {
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
@@ -406,11 +420,13 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
         chordElement.style.margin = '0 2px';
         chordElement.style.border = `1px solid ${selectedChordColor}40`;
         chordElement.contentEditable = 'false';
-        chordElement.textContent = `[${chordName}]`;
-        chordElement.dataset.chord = chordName;
+        // Display in user's language, but store English version in data attribute
+        const displayChord = language === 'fr' ? chordName : englishChord;
+        chordElement.textContent = `[${displayChord}]`;
+        chordElement.dataset.chord = englishChord; // Always store in English
         
         // Add validation styling
-        if (chordValidation && !validateChord(chordName)) {
+        if (chordValidation && !validateChord(englishChord)) {
           chordElement.style.borderColor = '#EF4444';
           chordElement.style.backgroundColor = '#FEF2F2';
           chordElement.title = 'Invalid chord - check spelling';
@@ -427,37 +443,62 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
     }
   };
 
-  const transposeChords = (semitones: number) => {
-    const chordOrder = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
+  const transposeChords = (targetKeyOrSemitones?: string | number) => {
+    if (!editorRef.current) return;
     
-    if (editorRef.current) {
-      const chordElements = editorRef.current.querySelectorAll('.chord-marker');
-      chordElements.forEach(element => {
-        const chordName = element.dataset.chord;
-        if (chordName) {
-          const baseChord = chordName.replace(/[^A-G#b]/g, '');
-          const suffix = chordName.replace(/^[A-G#b]+/, '');
-          const currentIndex = chordOrder.indexOf(baseChord);
-          if (currentIndex !== -1) {
-            const newIndex = (currentIndex + semitones + 12) % 12;
-            const newChord = chordOrder[newIndex] + suffix;
-            element.textContent = `[${newChord}]`;
-            element.dataset.chord = newChord;
-            
-            // Re-validate chord
-            if (chordValidation && !validateChord(newChord)) {
-              element.style.borderColor = '#EF4444';
-              element.style.backgroundColor = '#FEF2F2';
-            } else {
-              element.style.borderColor = `${selectedChordColor}40`;
-              element.style.backgroundColor = `${selectedChordColor}20`;
-            }
-          }
-        }
-      });
+    // Calculate semitones based on target key or semitone offset
+    let semitones = 0;
+    
+    if (typeof targetKeyOrSemitones === 'string') {
+      // Called with a target key (e.g., "D#")
+      const originalKey = songData.key || 'C';
+      const originalIndex = getSemitoneIndex(originalKey);
+      const targetIndex = getSemitoneIndex(targetKeyOrSemitones);
+      semitones = targetIndex - originalIndex;
+      
+      // Update song key
+      setSongData(prev => ({ ...prev, key: targetKeyOrSemitones }));
+    } else if (typeof targetKeyOrSemitones === 'number') {
+      // Called with semitone offset (e.g., -1, 1)
+      semitones = targetKeyOrSemitones;
     }
     
-    setTransposeAmount(transposeAmount + semitones);
+    if (semitones === 0 && typeof targetKeyOrSemitones !== 'number') return; // No change needed
+    
+    const chordElements = editorRef.current.querySelectorAll('.chord-marker');
+    chordElements.forEach((element) => {
+      const htmlElement = element as HTMLElement;
+      const chordName = htmlElement.dataset.chord;
+      if (chordName) {
+        // Transpose the chord (chordName is in English)
+        const transposedChord = transposeChordUtil(chordName, semitones);
+        
+        // Update stored chord (English)
+        htmlElement.dataset.chord = transposedChord;
+        
+        // Display in user's language
+        const displayChord = language === 'fr' 
+          ? convertChordArray([transposedChord], 'fr')[0]
+          : transposedChord;
+        
+        htmlElement.textContent = `[${displayChord}]`;
+        
+        // Re-validate chord
+        if (chordValidation && !validateChord(transposedChord)) {
+          htmlElement.style.borderColor = '#EF4444';
+          htmlElement.style.backgroundColor = '#FEF2F2';
+        } else {
+          htmlElement.style.borderColor = `${selectedChordColor}40`;
+          htmlElement.style.backgroundColor = `${selectedChordColor}20`;
+        }
+      }
+    });
+    
+    if (typeof targetKeyOrSemitones === 'string') {
+      setTransposeAmount(semitones);
+    } else {
+      setTransposeAmount(transposeAmount + semitones);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -663,7 +704,23 @@ export const AdvancedSongEditor = ({ songId }: { songId: string }) => {
                 <Button variant="outline" size="sm" onClick={() => transposeChords(1)}>
                   <Plus className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setTransposeAmount(0)}>
+                <Select
+                  value={songData.key || 'C'}
+                  onValueChange={(newKey) => transposeChords(newKey)}
+                >
+                  <SelectTrigger className="w-24 h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'].map(key => (
+                      <SelectItem key={key} value={key}>{key}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="sm" onClick={() => {
+                  setTransposeAmount(0);
+                  transposeChords(songData.key || 'C');
+                }}>
                   <RotateCcw className="h-4 w-4" />
                 </Button>
               </div>
