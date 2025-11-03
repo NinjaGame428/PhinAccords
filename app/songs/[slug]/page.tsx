@@ -692,7 +692,9 @@ const SongDetailsPage = () => {
                     <div className="flex items-center gap-2">
                       {song.key_signature && (
                         <Badge variant="outline" className="text-sm">
-                          {t('songDetail.key')}: {transposeKey || song.key_signature}
+                          {t('songDetail.key')}: {language === 'fr' 
+                            ? englishToFrenchChord(transposeKey || song.key_signature) 
+                            : (transposeKey || song.key_signature)}
                         </Badge>
                       )}
                       <Select
@@ -715,24 +717,50 @@ const SongDetailsPage = () => {
                           <SelectValue placeholder="Select key" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={song.key_signature || 'C'}>Original ({song.key_signature || 'C'})</SelectItem>
-                          <SelectItem value="C">C</SelectItem>
-                          <SelectItem value="C#">C#</SelectItem>
-                          <SelectItem value="Db">Db</SelectItem>
-                          <SelectItem value="D">D</SelectItem>
-                          <SelectItem value="D#">D#</SelectItem>
-                          <SelectItem value="Eb">Eb</SelectItem>
-                          <SelectItem value="E">E</SelectItem>
-                          <SelectItem value="F">F</SelectItem>
-                          <SelectItem value="F#">F#</SelectItem>
-                          <SelectItem value="Gb">Gb</SelectItem>
-                          <SelectItem value="G">G</SelectItem>
-                          <SelectItem value="G#">G#</SelectItem>
-                          <SelectItem value="Ab">Ab</SelectItem>
-                          <SelectItem value="A">A</SelectItem>
-                          <SelectItem value="A#">A#</SelectItem>
-                          <SelectItem value="Bb">Bb</SelectItem>
-                          <SelectItem value="B">B</SelectItem>
+                          <SelectItem value={song.key_signature || 'C'}>
+                            {language === 'fr' ? 'Original' : 'Original'} ({language === 'fr' ? englishToFrenchChord(song.key_signature || 'C') : song.key_signature || 'C'})
+                          </SelectItem>
+                          {language === 'fr' ? (
+                            <>
+                              <SelectItem value="C">Do</SelectItem>
+                              <SelectItem value="C#">Do#</SelectItem>
+                              <SelectItem value="Db">Ré♭</SelectItem>
+                              <SelectItem value="D">Ré</SelectItem>
+                              <SelectItem value="D#">Ré#</SelectItem>
+                              <SelectItem value="Eb">Mi♭</SelectItem>
+                              <SelectItem value="E">Mi</SelectItem>
+                              <SelectItem value="F">Fa</SelectItem>
+                              <SelectItem value="F#">Fa#</SelectItem>
+                              <SelectItem value="Gb">Sol♭</SelectItem>
+                              <SelectItem value="G">Sol</SelectItem>
+                              <SelectItem value="G#">Sol#</SelectItem>
+                              <SelectItem value="Ab">La♭</SelectItem>
+                              <SelectItem value="A">La</SelectItem>
+                              <SelectItem value="A#">La#</SelectItem>
+                              <SelectItem value="Bb">Si♭</SelectItem>
+                              <SelectItem value="B">Si</SelectItem>
+                            </>
+                          ) : (
+                            <>
+                              <SelectItem value="C">C</SelectItem>
+                              <SelectItem value="C#">C#</SelectItem>
+                              <SelectItem value="Db">Db</SelectItem>
+                              <SelectItem value="D">D</SelectItem>
+                              <SelectItem value="D#">D#</SelectItem>
+                              <SelectItem value="Eb">Eb</SelectItem>
+                              <SelectItem value="E">E</SelectItem>
+                              <SelectItem value="F">F</SelectItem>
+                              <SelectItem value="F#">F#</SelectItem>
+                              <SelectItem value="Gb">Gb</SelectItem>
+                              <SelectItem value="G">G</SelectItem>
+                              <SelectItem value="G#">G#</SelectItem>
+                              <SelectItem value="Ab">Ab</SelectItem>
+                              <SelectItem value="A">A</SelectItem>
+                              <SelectItem value="A#">A#</SelectItem>
+                              <SelectItem value="Bb">Bb</SelectItem>
+                              <SelectItem value="B">B</SelectItem>
+                            </>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>

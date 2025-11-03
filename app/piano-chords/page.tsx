@@ -95,6 +95,14 @@ const PianoChordsPage = () => {
   // Function to convert chord names to French
   const getChordName = (chordName: string) => {
     if (language === 'fr') {
+      // First check if chord name is already in French (avoid double translation)
+      const frenchNotes = ['Do', 'Ré', 'Mi', 'Fa', 'Sol', 'La', 'Si', 'Do#', 'Ré#', 'Fa#', 'Sol#', 'La#', 'Ré♭', 'Mi♭', 'Sol♭', 'La♭', 'Si♭'];
+      for (const frenchNote of frenchNotes) {
+        if (chordName.startsWith(frenchNote)) {
+          return chordName; // Already in French, return as-is
+        }
+      }
+      
       // Order matters: replace longer patterns first to avoid partial matches
       // Process from longest to shortest to avoid "D" matching inside "D#"
       const replacements: Array<{ pattern: RegExp; replacement: string }> = [

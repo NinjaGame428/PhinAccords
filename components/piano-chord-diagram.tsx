@@ -24,35 +24,40 @@ interface PianoChordDiagramProps {
 // Helper function to normalize chord names for the API
 const normalizeChordName = (chordName: string): string => {
   // Convert French notation to standard notation
+  // IMPORTANT: Check longer patterns first (Do# before Do, Ré♭ before Ré)
   const frenchToStandard: { [key: string]: string } = {
-    'Do': 'C',
     'Do#': 'C#',
-    'Ré': 'D',
     'Ré#': 'D#',
     'Ré♭': 'Db',
-    'Mi': 'E',
     'Mi♭': 'Eb',
-    'Fa': 'F',
     'Fa#': 'F#',
-    'Sol': 'G',
     'Sol#': 'G#',
     'Sol♭': 'Gb',
-    'La': 'A',
     'La#': 'A#',
     'La♭': 'Ab',
-    'Si': 'B',
     'Si♭': 'Bb',
+    'Do': 'C',
+    'Ré': 'D',
+    'Mi': 'E',
+    'Fa': 'F',
+    'Sol': 'G',
+    'La': 'A',
+    'Si': 'B',
   };
 
   // Check if it's French notation and convert
+  // Use startsWith for each French note to avoid partial matches
+  // Process longer patterns first
+  let normalized = chordName;
   for (const [french, standard] of Object.entries(frenchToStandard)) {
-    if (chordName.includes(french)) {
-      return chordName.replace(french, standard);
+    if (normalized.startsWith(french)) {
+      normalized = normalized.replace(french, standard);
+      break; // Only replace once, at the start
     }
   }
 
   // Return as-is if already in standard notation
-  return chordName;
+  return normalized;
 };
 
 // Function to extract notes from chord name
