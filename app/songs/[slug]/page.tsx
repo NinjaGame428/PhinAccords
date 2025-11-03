@@ -14,6 +14,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getTranslatedRoute } from '@/lib/url-translations';
 import { transposeChord as transposeChordUtil, getSemitoneIndex, getKeyFromIndex, frenchToEnglishChord, englishToFrenchChord } from '@/lib/chord-utils';
 import { Interval } from 'tonal';
+import { transpose } from 'chord-transposer';
 import { PianoChordTooltip } from '@/components/ui/piano-chord-tooltip';
 import '@/components/ui/rich-text-editor.css';
 import {
@@ -28,16 +29,19 @@ import PianoChordDiagram from '@/components/piano-chord-diagram';
 // Component to fetch and display individual chord with database data
 const ChordPreviewItem = ({ chordName }: { chordName: string }) => {
   const [chordData, setChordData] = useState<any>(null);
+  const { language } = useLanguage();
 
   useEffect(() => {
     const fetchChordData = async () => {
       try {
-        const response = await fetch(`/api/piano-chords?chordName=${encodeURIComponent(chordName)}`);
+        // Chord name is always in English (from extractChords/extractChordsFromTransposed)
+        // Convert to display language if needed for the API call
+        const response = await fetch(`/api/piano-chords?chordName=${encodeURIComponent(chordName)}&language=${language}`);
         if (response.ok) {
           const data = await response.json();
           if (data.chords && data.chords.length > 0) {
-            // Use first matching chord
-            const chord = data.chords[0];
+            // Use first matching chord (prefer root position)
+            const chord = data.chords.find((c: any) => c.inversion === 0) || data.chords[0];
             setChordData({
               notes: chord.notes || [],
               fingers: chord.finger_positions || [],
@@ -51,12 +55,17 @@ const ChordPreviewItem = ({ chordName }: { chordName: string }) => {
       }
     };
     fetchChordData();
-  }, [chordName]);
+  }, [chordName, language]);
+
+  // Display chord name in viewer's language
+  const displayChordName = language === 'fr' 
+    ? englishToFrenchChord(chordName) || chordName
+    : chordName;
 
   return (
     <div className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
       <PianoChordDiagram
-        chordName={chordName}
+        chordName={displayChordName}
         notes={chordData?.notes || []}
         fingers={chordData?.fingers || []}
         description={chordData?.description || ''}
@@ -139,113 +148,110 @@ const SongDetailsPage = () => {
   const transposeChordsInLyrics = (targetKey: string) => {
     if (!song || !song.lyrics) return;
     
-    const originalKey = song.key_signature || 'C';
+    const originalKey = song.key_signature || song.original_key || 'C';
     
-    // Use tonal to calculate interval between keys
-    let semitones = 0;
-    try {
-      // Convert French keys to English for tonal
-      const englishOriginalKey = frenchToEnglishChord(originalKey) || originalKey;
-      const englishTargetKey = frenchToEnglishChord(targetKey) || targetKey;
-      
-      // Calculate interval using tonal
-      const interval = Interval.distance(englishOriginalKey, englishTargetKey);
-      if (interval) {
-        // Convert interval to semitones
-        const semitonesFromInterval = Interval.semitones(interval) || 0;
-        semitones = semitonesFromInterval;
-      } else {
-        // Fallback to manual calculation
-        const originalIndex = getSemitoneIndex(originalKey);
-        const targetIndex = getSemitoneIndex(targetKey);
-        semitones = targetIndex - originalIndex;
-      }
-    } catch (error) {
-      console.error('Error calculating interval with tonal:', error);
-      // Fallback to manual calculation
-      const originalIndex = getSemitoneIndex(originalKey);
-      const targetIndex = getSemitoneIndex(targetKey);
-      semitones = targetIndex - originalIndex;
-    }
+    // Convert French keys to English for chord-transposer
+    const englishOriginalKey = frenchToEnglishChord(originalKey) || originalKey;
+    const englishTargetKey = frenchToEnglishChord(targetKey) || targetKey;
     
-    console.log('🎹 Transposing:', {
-      originalKey,
-      targetKey,
-      semitones,
-    });
-    
-    if (semitones === 0) {
+    // If keys are the same, reset
+    if (englishOriginalKey === englishTargetKey) {
       setTransposedLyrics(null);
+      setTransposeKey(null);
       return;
     }
     
-    // Replace chords in HTML format: <span class="chord" data-chord="...">[ChordName]</span>
-    let transposedHtml = song.lyrics;
-    
-    // Pattern to match chord spans with optional data-chord attribute
-    const chordSpanPattern = /<span\s+class="(?:chord|chord-marker)"[^>]*(?:data-chord="([^"]*)")?[^>]*>\[([^\]]+)\]<\/span>/gi;
-    
-    transposedHtml = transposedHtml.replace(chordSpanPattern, (match: string, dataChord: string | undefined, chordName: string) => {
-      // Priority: use data-chord if available (always in English), otherwise use textContent
-      let englishChord = dataChord?.trim() || chordName.trim();
-      
-      // If we got chordName but not dataChord, convert to English if needed
-      if (!dataChord) {
-        if (language === 'fr') {
-          englishChord = frenchToEnglishChord(chordName.trim()) || chordName.trim();
-        }
-      }
-      
-      // Transpose in English
-      const transposedEnglish = transposeChordUtil(englishChord, semitones);
-      
-      // Convert back to French if needed for display
-      let transposed = transposedEnglish;
-      if (language === 'fr') {
-        transposed = englishToFrenchChord(transposedEnglish) || transposedEnglish;
-      }
-      
-      // Update both data-chord (English) and textContent (viewer's language)
-      return match
-        .replace(/data-chord="[^"]*"/, `data-chord="${transposedEnglish}"`)
-        .replace(/\[([^\]]+)\]/, `[${transposed}]`);
+    console.log('🎹 Transposing with chord-transposer:', {
+      originalKey: englishOriginalKey,
+      targetKey: englishTargetKey,
     });
     
-    // Also handle any standalone chord patterns in brackets
-    // Match chord names in [brackets], supporting both English and French note names
-    const chordNotePattern = '[A-G][#b]?|Do|Ré|Mi|Fa|Sol|La|Si|Do#|Ré#|Fa#|Sol#|La#|Ré♭|Mi♭|Sol♭|La♭|Si♭';
-    const chordSuffixPattern = '(?:m|maj|min|dim|aug|sus|add|7|9|11|13)?';
-    const chordSlashPattern = `(?:\\/${chordNotePattern})?`;
-    const standaloneChordPattern = new RegExp(`\\[(${chordNotePattern})${chordSuffixPattern}${chordSlashPattern})\\]`, 'gi');
-    transposedHtml = transposedHtml.replace(standaloneChordPattern, (match: string, chordName: string) => {
-      // Only replace if not already inside a chord span
-      if (!match.includes('class="chord"')) {
-        // Convert French to English if needed
-        let englishChord = chordName;
-        if (language === 'fr') {
-          englishChord = frenchToEnglishChord(chordName) || chordName;
+    try {
+      // Extract all chords from the lyrics HTML
+      let transposedHtml = song.lyrics;
+      
+      // Pattern to match chord spans with optional data-chord attribute
+      const chordSpanPattern = /<span\s+class="(?:chord|chord-marker)"[^>]*(?:data-chord="([^"]*)")?[^>]*>\[([^\]]+)\]<\/span>/gi;
+      
+      // Replace chords in spans
+      transposedHtml = transposedHtml.replace(chordSpanPattern, (match: string, dataChord: string | undefined, chordName: string) => {
+        // Priority: use data-chord if available (always in English), otherwise use textContent
+        let englishChord = dataChord?.trim() || chordName.trim();
+        
+        // If we got chordName but not dataChord, convert to English if needed
+        if (!dataChord) {
+          if (language === 'fr') {
+            englishChord = frenchToEnglishChord(chordName.trim()) || chordName.trim();
+          }
         }
         
-        // Transpose
-        const transposedEnglish = transposeChordUtil(englishChord, semitones);
-        
-        // Convert back to French if needed
-        let transposed = transposedEnglish;
-        if (language === 'fr') {
-          transposed = englishToFrenchChord(transposedEnglish) || transposedEnglish;
+        // Use chord-transposer to transpose
+        try {
+          const transposedEnglish = transpose(englishChord).fromKey(englishOriginalKey).toKey(englishTargetKey).toString();
+          
+          // Convert back to French if needed for display
+          let transposed = transposedEnglish;
+          if (language === 'fr') {
+            transposed = englishToFrenchChord(transposedEnglish) || transposedEnglish;
+          }
+          
+          // Update both data-chord (English) and textContent (viewer's language)
+          return match
+            .replace(/data-chord="[^"]*"/, `data-chord="${transposedEnglish}"`)
+            .replace(/\[([^\]]+)\]/, `[${transposed}]`);
+        } catch (error) {
+          console.warn('Error transposing chord:', englishChord, error);
+          return match; // Return original if transposition fails
         }
-        
-        return `[${transposed}]`;
-      }
-      return match;
-    });
-    
-    setTransposedLyrics(transposedHtml);
-    // DO NOT update uniqueChords here - keep original chords displayed
+      });
+      
+      // Also handle standalone chord patterns in brackets
+      const standaloneChordPattern = /\[([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|7|9|11|13)?(?:\/[A-G][#b]?)?)\]/gi;
+      transposedHtml = transposedHtml.replace(standaloneChordPattern, (match: string, chordName: string) => {
+        // Only replace if not already inside a chord span
+        if (!match.includes('class="chord') && !match.includes('class="chord-marker')) {
+          // Convert French to English if needed
+          let englishChord = chordName;
+          const frenchNotes = ['Do', 'Ré', 'Mi', 'Fa', 'Sol', 'La', 'Si'];
+          const isFrench = frenchNotes.some(note => chordName.startsWith(note));
+          
+          if (isFrench || language === 'fr') {
+            englishChord = frenchToEnglishChord(chordName) || chordName;
+          }
+          
+          // Use chord-transposer to transpose
+          try {
+            const transposedEnglish = transpose(englishChord).fromKey(englishOriginalKey).toKey(englishTargetKey).toString();
+            
+            // Convert back to French if needed
+            let transposed = transposedEnglish;
+            if (language === 'fr') {
+              transposed = englishToFrenchChord(transposedEnglish) || transposedEnglish;
+            }
+            
+            return `[${transposed}]`;
+          } catch (error) {
+            console.warn('Error transposing standalone chord:', englishChord, error);
+            return match; // Return original if transposition fails
+          }
+        }
+        return match;
+      });
+      
+      setTransposedLyrics(transposedHtml);
+      
+      // Update uniqueChords to show transposed chords in preview
+      extractChordsFromTransposed(transposedHtml);
+      
+    } catch (error) {
+      console.error('Error transposing lyrics with chord-transposer:', error);
+      // Fallback to original method if chord-transposer fails
+      setTransposedLyrics(null);
+    }
   };
-
-  // Extract unique chords from lyrics
-  const extractChords = (lyricsHtml: string) => {
+  
+  // Extract chords from transposed lyrics for preview
+  const extractChordsFromTransposed = (lyricsHtml: string) => {
     if (!lyricsHtml) return;
     
     const tempDiv = document.createElement('div');
@@ -254,10 +260,11 @@ const SongDetailsPage = () => {
     const chordSet = new Set<string>();
     
     // Find all chord spans
-    const chordElements = tempDiv.querySelectorAll('.chord');
+    const chordElements = tempDiv.querySelectorAll('.chord, .chord-marker');
     chordElements.forEach((element) => {
-      const chordText = element.textContent || '';
-      const chordName = chordText.replace(/\[|\]/g, '').trim();
+      const htmlElement = element as HTMLElement;
+      // Use dataset.chord (English) for consistency
+      const chordName = htmlElement.dataset.chord || htmlElement.textContent?.replace(/\[|\]/g, '').trim() || '';
       if (chordName) {
         chordSet.add(chordName);
       }
@@ -267,7 +274,54 @@ const SongDetailsPage = () => {
     const chordPattern = /\[([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|7|9|11|13)?(?:\/[A-G][#b]?)?)\]/gi;
     let match;
     while ((match = chordPattern.exec(lyricsHtml)) !== null) {
-      if (!match[0].includes('class="chord"')) {
+      if (!match[0].includes('class="chord')) {
+        chordSet.add(match[1]);
+      }
+    }
+    
+    setUniqueChords(chordSet);
+  };
+
+  // Extract unique chords from lyrics (original, not transposed)
+  const extractChords = (lyricsHtml: string) => {
+    if (!lyricsHtml) return;
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = lyricsHtml;
+    
+    const chordSet = new Set<string>();
+    
+    // Find all chord spans - use data-chord if available (English), otherwise textContent
+    const chordElements = tempDiv.querySelectorAll('.chord, .chord-marker');
+    chordElements.forEach((element) => {
+      const htmlElement = element as HTMLElement;
+      // Priority: use dataset.chord (always in English for storage)
+      const englishChord = htmlElement.dataset.chord;
+      const displayChord = htmlElement.textContent?.replace(/\[|\]/g, '').trim() || '';
+      
+      if (englishChord) {
+        // Store English chord for API calls
+        chordSet.add(englishChord);
+      } else if (displayChord) {
+        // Convert to English if needed
+        const chordName = displayChord;
+        const frenchNotes = ['Do', 'Ré', 'Mi', 'Fa', 'Sol', 'La', 'Si'];
+        const isFrench = frenchNotes.some(note => chordName.startsWith(note));
+        
+        if (isFrench) {
+          const english = frenchToEnglishChord(chordName) || chordName;
+          chordSet.add(english);
+        } else {
+          chordSet.add(chordName);
+        }
+      }
+    });
+    
+    // Also find standalone chord patterns
+    const chordPattern = /\[([A-G][#b]?(?:m|maj|min|dim|aug|sus|add|7|9|11|13)?(?:\/[A-G][#b]?)?)\]/gi;
+    let match;
+    while ((match = chordPattern.exec(lyricsHtml)) !== null) {
+      if (!match[0].includes('class="chord')) {
         chordSet.add(match[1]);
       }
     }
@@ -780,14 +834,18 @@ const SongDetailsPage = () => {
                         </Badge>
                       )}
                       <Select
-                        value={transposeKey || song.key_signature || 'C'}
+                        value={transposeKey || song.key_signature || song.original_key || 'C'}
                         onValueChange={(newKey) => {
-                          const originalKey = song.key_signature || 'C';
-                          if (newKey === originalKey) {
+                          const originalKey = song.key_signature || song.original_key || 'C';
+                          const englishOriginalKey = frenchToEnglishChord(originalKey) || originalKey;
+                          const englishNewKey = frenchToEnglishChord(newKey) || newKey;
+                          
+                          if (englishNewKey === englishOriginalKey) {
                             // Reset to original
                             setTransposeKey(null);
                             setTransposedLyrics(null);
-                            // Chords already show original, no need to reset
+                            // Reset chords to original
+                            extractChords(song.lyrics || '');
                           } else {
                             // Transpose to new key
                             setTransposeKey(newKey);
@@ -799,8 +857,8 @@ const SongDetailsPage = () => {
                           <SelectValue placeholder="Select key" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={song.key_signature || 'C'}>
-                            {language === 'fr' ? 'Original' : 'Original'} ({language === 'fr' ? englishToFrenchChord(song.key_signature || 'C') : song.key_signature || 'C'})
+                          <SelectItem value={song.key_signature || song.original_key || 'C'}>
+                            {language === 'fr' ? 'Original' : 'Original'} ({language === 'fr' ? englishToFrenchChord(song.key_signature || song.original_key || 'C') : song.key_signature || song.original_key || 'C'})
                           </SelectItem>
                           {language === 'fr' ? (
                             <>
@@ -1045,8 +1103,11 @@ const SongDetailsPage = () => {
                     {t('songDetail.chords')} Preview
                   </CardTitle>
                   <CardDescription>
-                    Root Chords ({song.key_signature || 'C'})
-                    {transposeKey && ` • Song transposed to ${transposeKey}`}
+                    {transposeKey ? (
+                      <>Transposed Chords ({transposeKey})</>
+                    ) : (
+                      <>Root Chords ({song.key_signature || song.original_key || 'C'})</>
+                    )}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
