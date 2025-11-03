@@ -74,6 +74,85 @@ ALTER TABLE public.piano_chords
 ALTER TABLE public.piano_chords 
   ADD COLUMN IF NOT EXISTS root_name TEXT;
 
+-- Add finger_positions column if it doesn't exist
+ALTER TABLE public.piano_chords 
+  ADD COLUMN IF NOT EXISTS finger_positions JSONB;
+
+-- Ensure finger_positions exists even if table was created differently
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'piano_chords' 
+    AND column_name = 'finger_positions'
+  ) THEN
+    ALTER TABLE public.piano_chords ADD COLUMN finger_positions JSONB;
+  END IF;
+END $$;
+
+-- Add diagram_svg column for storing rendered SVG diagrams
+ALTER TABLE public.piano_chords 
+  ADD COLUMN IF NOT EXISTS diagram_svg TEXT;
+
+-- Add diagram_data column for storing diagram configuration (JSONB)
+ALTER TABLE public.piano_chords 
+  ADD COLUMN IF NOT EXISTS diagram_data JSONB;
+
+-- Add chord_type column if it doesn't exist (nullable to support existing data)
+ALTER TABLE public.piano_chords 
+  ADD COLUMN IF NOT EXISTS chord_type TEXT;
+
+-- Make chord_type nullable if it exists as NOT NULL
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'piano_chords' 
+    AND column_name = 'chord_type'
+    AND is_nullable = 'NO'
+  ) THEN
+    ALTER TABLE public.piano_chords ALTER COLUMN chord_type DROP NOT NULL;
+  END IF;
+END $$;
+
+-- Add root_note column if it doesn't exist (nullable to support existing data)
+ALTER TABLE public.piano_chords 
+  ADD COLUMN IF NOT EXISTS root_note TEXT;
+
+-- Make root_note nullable if it exists as NOT NULL
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'piano_chords' 
+    AND column_name = 'root_note'
+    AND is_nullable = 'NO'
+  ) THEN
+    ALTER TABLE public.piano_chords ALTER COLUMN root_note DROP NOT NULL;
+  END IF;
+END $$;
+
+-- Add intervals column if it doesn't exist (nullable to support existing data)
+ALTER TABLE public.piano_chords 
+  ADD COLUMN IF NOT EXISTS intervals INTEGER[];
+
+-- Make intervals nullable if it exists as NOT NULL
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'piano_chords' 
+    AND column_name = 'intervals'
+    AND is_nullable = 'NO'
+  ) THEN
+    ALTER TABLE public.piano_chords ALTER COLUMN intervals DROP NOT NULL;
+  END IF;
+END $$;
+
 -- Create indexes safely (check if columns exist first)
 DO $$
 BEGIN
@@ -126,4 +205,7 @@ END $$;
 -- Add comments
 COMMENT ON COLUMN public.piano_chords.inversion IS 'Inversion number: 0 = root position, 1 = first inversion, 2 = second inversion, 3 = third inversion';
 COMMENT ON COLUMN public.piano_chords.root_name IS 'Base chord name without inversion suffix';
+COMMENT ON COLUMN public.piano_chords.finger_positions IS 'JSONB array of finger positions for each note (e.g., [1,3,5])';
+COMMENT ON COLUMN public.piano_chords.diagram_svg IS 'Pre-rendered SVG diagram of the piano chord (cached for performance)';
+COMMENT ON COLUMN public.piano_chords.diagram_data IS 'JSONB configuration data for rendering the chord diagram (notes positions, key highlights, etc.)';
 

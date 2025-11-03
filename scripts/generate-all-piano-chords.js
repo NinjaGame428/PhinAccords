@@ -148,18 +148,53 @@ function generateAllChords() {
         chords.push({
           chord_name: fullChordName,
           key_signature: keySignature,
-          difficulty: chordType.difficulty,
+          difficulty: chordType.difficulty.charAt(0).toUpperCase() + chordType.difficulty.slice(1), // Capitalize: 'easy' -> 'Easy'
           notes: inv.notes,
           finger_positions: generateFingerPositions(inv.notes, inv.inversion),
           description: `${chordType.description} - ${inv.name}`,
           inversion: inv.inversion,
-          root_name: chordName
+          root_name: chordName,
+          intervals: chordType.intervals
         });
       });
     }
   }
   
   return chords;
+}
+
+// Extract chord type from description
+function extractChordType(description) {
+  if (description.includes('Major triad')) return 'major';
+  if (description.includes('Minor triad')) return 'minor';
+  if (description.includes('Diminished triad')) return 'diminished';
+  if (description.includes('Augmented triad')) return 'augmented';
+  if (description.includes('Suspended 2nd')) return 'sus2';
+  if (description.includes('Suspended 4th')) return 'sus4';
+  if (description.includes('Dominant 7th')) return 'dominant7';
+  if (description.includes('Major 7th')) return 'major7';
+  if (description.includes('Minor 7th')) return 'minor7';
+  if (description.includes('Major 9th')) return 'major9';
+  if (description.includes('Dominant 9th')) return 'dominant9';
+  if (description.includes('Minor 9th')) return 'minor9';
+  if (description.includes('Add 9th')) return 'add9';
+  if (description.includes('Major 6th')) return 'major6';
+  if (description.includes('Minor 6th')) return 'minor6';
+  if (description.includes('Diminished 7th')) return 'diminished7';
+  return null;
+}
+
+// Extract root note from root_name (e.g., 'C' from 'C', 'Cm', 'C#maj7')
+function extractRootNote(rootName) {
+  if (!rootName) return null;
+  
+  // Match the base note (C, C#, D, D#, etc.) at the start
+  const match = rootName.match(/^([A-G][#b]?)/);
+  if (match) {
+    return match[1];
+  }
+  
+  return rootName.charAt(0); // Fallback to first character
 }
 
 // Generate SQL insert statements
@@ -170,13 +205,18 @@ function generateSQL(chords) {
   sqlStatements.push('DELETE FROM public.piano_chords;');
   sqlStatements.push('');
   sqlStatements.push('-- Insert all piano chords with inversions');
-  sqlStatements.push('INSERT INTO public.piano_chords (chord_name, key_signature, difficulty, notes, finger_positions, description, inversion, root_name) VALUES');
+  sqlStatements.push('INSERT INTO public.piano_chords (chord_name, key_signature, difficulty, notes, finger_positions, description, inversion, root_name, chord_type, root_note, intervals) VALUES');
   
   const values = chords.map((chord, index) => {
     const notesArray = `ARRAY[${chord.notes.map(n => `'${n}'`).join(', ')}]`;
     const fingerPositions = JSON.stringify(chord.finger_positions);
+    const chordType = extractChordType(chord.description);
+    const chordTypeValue = chordType ? `'${chordType}'` : 'NULL';
+    const rootNote = extractRootNote(chord.root_name);
+    const rootNoteValue = rootNote ? `'${rootNote.replace(/'/g, "''")}'` : 'NULL';
+    const intervalsArray = chord.intervals ? `ARRAY[${chord.intervals.join(', ')}]::integer[]` : 'NULL';
     
-    return `  ('${chord.chord_name.replace(/'/g, "''")}', '${chord.key_signature}', '${chord.difficulty}', ${notesArray}, '${fingerPositions}'::jsonb, '${chord.description.replace(/'/g, "''")}', ${chord.inversion}, '${chord.root_name.replace(/'/g, "''")}')${index < chords.length - 1 ? ',' : ';'}`;
+    return `  ('${chord.chord_name.replace(/'/g, "''")}', '${chord.key_signature}', '${chord.difficulty}', ${notesArray}, '${fingerPositions}'::jsonb, '${chord.description.replace(/'/g, "''")}', ${chord.inversion}, '${chord.root_name.replace(/'/g, "''")}', ${chordTypeValue}, ${rootNoteValue}, ${intervalsArray})${index < chords.length - 1 ? ',' : ';'}`;
   });
   
   sqlStatements.push(...values);
