@@ -1,0 +1,55 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Logo } from "./logo";
+import { NavMenu } from "./nav-menu";
+import { NavigationSheet } from "./navigation-sheet";
+import LanguageSwitcher from "../language-switcher";
+import { UserMenu } from "./user-menu";
+import { NotificationsIcon } from "../notifications-icon";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getTranslatedRoute } from "@/lib/url-translations";
+import Link from "next/link";
+
+const Navbar = () => {
+  const { user, isLoading } = useAuth();
+  const { t, language } = useLanguage();
+
+  return (
+    <nav className="fixed z-10 top-6 inset-x-4 h-14 xs:h-16 bg-background/50 backdrop-blur-sm border dark:border-slate-700/70 max-w-screen-xl mx-auto rounded-full">
+      <div className="h-full flex items-center justify-between mx-auto px-4">
+        <Logo />
+
+        {/* Desktop Menu */}
+        <NavMenu className="hidden md:block" />
+
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher />
+          <NotificationsIcon />
+          
+          {/* Optimized: Show buttons immediately, update after auth loads */}
+          {user ? (
+            <UserMenu user={user} />
+          ) : (
+            <>
+              <Button variant="outline" className="hidden sm:inline-flex rounded-full" asChild>
+                <Link href={getTranslatedRoute('/login', language)}>{t('auth.signIn')}</Link>
+              </Button>
+              <Button className="hidden xs:inline-flex rounded-full" asChild>
+                <Link href={getTranslatedRoute('/register', language)}>{t('auth.getStarted')}</Link>
+              </Button>
+            </>
+          )}
+
+          {/* Mobile Menu */}
+          <div className="md:hidden">
+            <NavigationSheet />
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;

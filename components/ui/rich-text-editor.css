@@ -1,0 +1,100 @@
+/* Rich Text Editor Styles */
+
+/* Chord styling - make chords clickable */
+.chord {
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+  border-radius: 3px;
+  padding: 2px 4px;
+  display: inline-block;
+  color: #3b82f6;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.chord:hover {
+  background-color: rgba(59, 130, 246, 0.15);
+  transform: scale(1.05);
+}
+
+.chord:active {
+  transform: scale(0.98);
+}
+
+/* Prevent text selection issues */
+[contenteditable] .chord {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+.rich-text-editor [contenteditable]:empty:before {
+  content: var(--placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.rich-text-editor .chord {
+  color: #3b82f6;
+  font-weight: bold;
+  margin-right: 8px;
+  background-color: #eff6ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.rich-text-editor [contenteditable] {
+  min-height: 200px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  outline: none;
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+.rich-text-editor [contenteditable]:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.rich-text-editor .toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 8px 8px 0 0;
+}
+
+.rich-text-editor .toolbar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.rich-text-editor .toolbar button:hover {
+  background-color: #e5e7eb;
+}
+
+.rich-text-editor .toolbar button.active {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.rich-text-editor .toolbar .separator {
+  width: 1px;
+  height: 24px;
+  background-color: #d1d5db;
+  margin: 0 4px;
+}
