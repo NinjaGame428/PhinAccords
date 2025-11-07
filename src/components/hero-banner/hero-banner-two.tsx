@@ -5,12 +5,13 @@ import Slider from "react-slick";
 import Link from "next/link";
 // internal
 import bg_1 from "@/assets/images/media/img_piano_woman.jpg";
-import bg_2 from "@/assets/images/media/img_02.jpg";
-import bg_3 from "@/assets/images/media/img_woman_app_2.jpg";
+import bg_2 from "@/assets/images/media/img_girl_headphones.jpg";
+import bg_3 from "@/assets/images/media/img_teacher_children.jpg";
+import bg_4 from "@/assets/images/media/img_hands_piano.jpg";
 import icon from "@/assets/images/icon/icon_02.svg";
 
 // slider bg
-const slider_bg = [bg_1, bg_2, bg_3];
+const slider_bg = [bg_1, bg_2, bg_3, bg_4];
 // slider setting
 const slider_setting = {
   dots: false,
