@@ -6,9 +6,9 @@ import HeaderTwo from '@/layout/header/header-two'
 import FooterOne from '@/layout/footer/footer-one'
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 async function getSong(slug: string) {
@@ -30,7 +30,8 @@ async function getSong(slug: string) {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const song = await getSong(params.slug)
+  const { slug } = await params
+  const song = await getSong(slug)
 
   if (!song) {
     return {
@@ -45,7 +46,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function SongDetailPage({ params }: PageProps) {
-  const song = await getSong(params.slug)
+  const { slug } = await params
+  const song = await getSong(slug)
 
   if (!song) {
     notFound()
