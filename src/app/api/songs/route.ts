@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
       key_signature: searchParams.get('key') || undefined,
       difficulty: searchParams.get('difficulty') || undefined,
       category: searchParams.get('category') || undefined,
+      artist_id: searchParams.get('artist_id') || undefined,
       limit: parseInt(searchParams.get('limit') || '12'),
       offset: parseInt(searchParams.get('offset') || '0'),
     }
@@ -40,6 +41,10 @@ export async function GET(request: NextRequest) {
 
     if (filters.category) {
       query = query.eq('category', filters.category)
+    }
+
+    if (filters.artist_id) {
+      query = query.eq('artist_id', filters.artist_id)
     }
 
     if (filters.search) {

@@ -6,17 +6,20 @@ export async function GET(request: NextRequest) {
     const supabase = createServerClient()
     const searchParams = request.nextUrl.searchParams
 
+    const status = searchParams.get('status') || undefined
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
-    const search = searchParams.get('q') || undefined
+
+    // TODO: Add admin authentication check
+    // For now, allow all GET requests
 
     let query = supabase
-      .from('artists')
+      .from('song_requests')
       .select('*', { count: 'exact' })
-      .order('name', { ascending: true })
+      .order('created_at', { ascending: false })
 
-    if (search) {
-      query = query.ilike('name', `%${search}%`)
+    if (status) {
+      query = query.eq('status', status)
     }
 
     query = query.range(offset, offset + limit - 1)
@@ -29,7 +32,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      artists: data || [],
+      requests: data || [],
       total: count || 0,
       limit,
       offset,
@@ -45,21 +48,29 @@ export async function POST(request: NextRequest) {
     const supabase = createServerClient()
     const body = await request.json()
 
-    const { name, bio, image_url, website } = body
+    const { title, artist, genre, key, difficulty, message, contact_email, priority } = body
 
-    if (!name) {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+    if (!title || !artist) {
+      return NextResponse.json({ error: 'Title and artist are required' }, { status: 400 })
     }
 
-    // TODO: Add admin authentication check
+    // Get user from request (if authenticated)
+    // TODO: Get from authenticated session
+    const userId = body.user_id || null
 
     const { data, error } = await supabase
-      .from('artists')
+      .from('song_requests')
       .insert({
-        name,
-        bio: bio || null,
-        image_url: image_url || null,
-        website: website || null,
+        user_id: userId,
+        title,
+        artist,
+        genre: genre || null,
+        key: key || null,
+        difficulty: difficulty || null,
+        message: message || null,
+        contact_email: contact_email || null,
+        priority: priority || 'Normal',
+        status: 'pending',
       })
       .select()
       .single()
@@ -69,7 +80,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ artist: data }, { status: 201 })
+    return NextResponse.json({ request: data }, { status: 201 })
   } catch (error: any) {
     console.error('API error:', error)
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 })

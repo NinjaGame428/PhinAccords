@@ -50,6 +50,7 @@ export interface SongFilters {
   key_signature?: string;
   difficulty?: string;
   category?: string;
+  artist_id?: string;
   search?: string;
   limit?: number;
   offset?: number;
