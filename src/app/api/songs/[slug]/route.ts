@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import songCache from '@/lib/song-cache'
+import { requireAdmin, optionalAuth } from '@/lib/auth-middleware'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    // Rate limiting
+    const rateLimitResult = await rateLimit({ maxRequests: 200, windowMs: 60 * 1000 })(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    }
+
     const supabase = createServerClient()
     const { slug } = await params
 
@@ -48,7 +57,11 @@ export async function PATCH(
     const { slug } = await params
     const body = await request.json()
 
-    // TODO: Add admin authentication check
+    // Require admin
+    const authResult = await requireAdmin(request)
+    if (authResult.error) {
+      return authResult.error
+    }
 
     const { data, error } = await supabase
       .from('songs')
@@ -65,6 +78,9 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Invalidate cache
+    songCache.invalidatePattern(/^songs:/)
+
     return NextResponse.json({ song: data })
   } catch (error: any) {
     console.error('API error:', error)
@@ -80,7 +96,11 @@ export async function DELETE(
     const supabase = createServerClient()
     const { slug } = await params
 
-    // TODO: Add admin authentication check
+    // Require admin
+    const authResult = await requireAdmin(request)
+    if (authResult.error) {
+      return authResult.error
+    }
 
     const { error } = await supabase.from('songs').delete().eq('slug', slug)
 
@@ -88,6 +108,9 @@ export async function DELETE(
       console.error('Supabase error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    // Invalidate cache
+    songCache.invalidatePattern(/^songs:/)
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

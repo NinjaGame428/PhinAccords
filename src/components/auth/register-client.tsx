@@ -79,7 +79,7 @@ const RegisterClient: React.FC = () => {
       }
 
       success('Account created successfully! Welcome to PhinAccords!')
-      router.push('/')
+      router.push('/dashboard')
       router.refresh()
     } catch (err: any) {
       notifyError(err.message || 'An error occurred during registration')
@@ -163,7 +163,7 @@ const RegisterClient: React.FC = () => {
             {errors.confirmPassword && <div className="invalid-feedback">{errors.confirmPassword}</div>}
           </div>
 
-          <button type="submit" className="btn btn-primary w-100 mb-3" disabled={loading}>
+          <button type="submit" className="btn-one w-100 mb-3" disabled={loading} style={{ cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
             {loading ? (
               <>
                 <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>

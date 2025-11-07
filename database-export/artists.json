@@ -1,0 +1,722 @@
+[
+  {
+    "id": "0a5d036d-b0dc-44b5-b024-a20df494ad95",
+    "name": "franck dianza",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/u8dyr_-ZeFI/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:29.839122+00:00",
+    "updated_at": "2025-10-02T17:58:29.839122+00:00"
+  },
+  {
+    "id": "0ec487da-edc7-4c6f-bfad-7848dbcf76f1",
+    "name": "Fiona - Shéryl Obame",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/d2CwJI1cUjo/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:52.316778+00:00",
+    "updated_at": "2025-10-02T17:58:52.316778+00:00"
+  },
+  {
+    "id": "1297d02b-3792-4ab6-83b2-562ea8b663ef",
+    "name": "SION _ OFFICIELLE",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/cJO0M7uT8VY/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:05.361035+00:00",
+    "updated_at": "2025-10-02T17:58:05.361035+00:00"
+  },
+  {
+    "id": "12af70e7-df87-4366-9dae-a4de4ae1b1ac",
+    "name": "Sylvain Kashila",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/7y8QspPFAcY/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:17.192587+00:00",
+    "updated_at": "2025-10-02T17:58:17.192587+00:00"
+  },
+  {
+    "id": "1a743867-4cee-4201-955d-8406b7a9f5eb",
+    "name": "ICC TV CONGO",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/ARJriqGOoyk/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:21.633934+00:00",
+    "updated_at": "2025-10-02T17:58:21.633934+00:00"
+  },
+  {
+    "id": "1de4938d-b830-4185-8a83-d3f32dccca00",
+    "name": "La Saintete Music",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/VtlU4kLLFUM/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:38.308285+00:00",
+    "updated_at": "2025-10-02T17:58:38.308285+00:00"
+  },
+  {
+    "id": "1e9dde42-cb97-49c8-bb23-ea1bc9968910",
+    "name": "PQLiberiaStar",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/g05u4hZh4rI/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:42.602927+00:00",
+    "updated_at": "2025-10-02T17:58:42.602927+00:00"
+  },
+  {
+    "id": "20abda43-60ff-4d14-b09c-5131f00efc23",
+    "name": "MAAJABU GOSPEL",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/cDxIPUffUlQ/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:45.292166+00:00",
+    "updated_at": "2025-10-02T17:58:45.292166+00:00"
+  },
+  {
+    "id": "20c45639-1da0-49a3-a9bc-21d1f85dd3fb",
+    "name": "musichretienne",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/iZXqR9Ccoek/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:39.911575+00:00",
+    "updated_at": "2025-10-02T17:58:39.911575+00:00"
+  },
+  {
+    "id": "248110de-ccde-4fae-9c7a-94ee4988e17e",
+    "name": "Nathaniel Bassey - Topic",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/fSDos_rHD8M/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:47.090389+00:00",
+    "updated_at": "2025-10-02T17:58:47.090389+00:00"
+  },
+  {
+    "id": "279e67e4-986c-451c-9c70-79062f88172c",
+    "name": "Bethel Music",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/6DjKbUQfe9U/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:26.733003+00:00",
+    "updated_at": "2025-10-02T17:58:26.733003+00:00"
+  },
+  {
+    "id": "299cd5e6-fba6-421c-995b-28e04126b74d",
+    "name": "FESEC2008",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/PRvMxrvyouc/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:32.492092+00:00",
+    "updated_at": "2025-10-02T17:58:32.492092+00:00"
+  },
+  {
+    "id": "29daf471-5f11-4101-bc4f-65880a923572",
+    "name": "Deborah LUKALU",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/6ajgbGy5fMU/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:04.538064+00:00",
+    "updated_at": "2025-10-02T17:58:04.538064+00:00"
+  },
+  {
+    "id": "2a8bcefb-5cfa-46e4-9db6-c51e43f268e7",
+    "name": "Grace Jocktane Officiel",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/hkCYokw7kAI/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:10.315163+00:00",
+    "updated_at": "2025-10-02T17:58:10.315163+00:00"
+  },
+  {
+    "id": "3659a878-b443-44c3-91d6-cfa0a7161372",
+    "name": "MOGmusic",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/_BOMurndcYA/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:35.244441+00:00",
+    "updated_at": "2025-10-02T17:58:35.244441+00:00"
+  },
+  {
+    "id": "39969948-5685-45eb-ba1a-48595abe7af8",
+    "name": "Leeland",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/iJCV_2H9xD0/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:20.658369+00:00",
+    "updated_at": "2025-10-02T17:58:20.658369+00:00"
+  },
+  {
+    "id": "3b1f3876-dd98-471a-a721-56e88b0e7a61",
+    "name": "Music Rhema",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/l2MO_2m3IoU/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:24.015702+00:00",
+    "updated_at": "2025-10-02T17:58:24.015702+00:00"
+  },
+  {
+    "id": "3ca0d8d5-84f8-49ea-8ea7-f47894fb38dc",
+    "name": "Hezekiah Walker",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/UuuZMg6NVeA/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:39.478079+00:00",
+    "updated_at": "2025-10-02T17:58:39.478079+00:00"
+  },
+  {
+    "id": "3d4482e6-8e9f-4684-89db-68aa7e6f22fa",
+    "name": "Dunsin Oyekan",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/gqIwEbCyxBo/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:29.014498+00:00",
+    "updated_at": "2025-10-02T17:58:29.014498+00:00"
+  },
+  {
+    "id": "4a8acd3c-11c1-486b-b5e7-6d04b1160cf0",
+    "name": "ICC TV GATINEAU",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/T4oVDCuNmnc/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:28.627061+00:00",
+    "updated_at": "2025-10-02T17:58:28.627061+00:00"
+  },
+  {
+    "id": "4e079bc5-9262-4de5-aa40-dfd22909350a",
+    "name": "Warehouse Worship",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/F3EcwZgJEn0/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:31.351339+00:00",
+    "updated_at": "2025-10-02T17:58:31.351339+00:00"
+  },
+  {
+    "id": "4f6ac962-c4f6-400d-a229-93776610173a",
+    "name": "Jasmin Faith",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/JhNN408ch5Q/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:18.296836+00:00",
+    "updated_at": "2025-10-02T17:58:18.296836+00:00"
+  },
+  {
+    "id": "5b723072-c102-40d7-8b45-0378b16987fd",
+    "name": "DEREK-JONES",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/R-UhImI7uqA/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:19.727258+00:00",
+    "updated_at": "2025-10-02T17:58:19.727258+00:00"
+  },
+  {
+    "id": "5d4acd23-2c78-49a4-a4c5-f91636b93136",
+    "name": "JOSEPH MOUSSIO OFFICIEL",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/BYv_NyZKFQ4/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:11.350146+00:00",
+    "updated_at": "2025-10-02T17:58:11.350146+00:00"
+  },
+  {
+    "id": "5e6fa5cd-d13e-48db-ae9d-5c526a466178",
+    "name": "DonMoenTV",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/LD-QBrhi0qg/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:41.847719+00:00",
+    "updated_at": "2025-10-02T17:58:41.847719+00:00"
+  },
+  {
+    "id": "60dd040f-c971-4775-8f4f-36713433bda2",
+    "name": "Priscilia Twambi",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/WPzWzAbnfIo/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:17.962051+00:00",
+    "updated_at": "2025-10-02T17:58:17.962051+00:00"
+  },
+  {
+    "id": "611af5b3-2c1d-4aee-a79e-6186c0fd61bc",
+    "name": "Enock Bahwere Officiel ",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/kLP18RSQwxc/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:12.866047+00:00",
+    "updated_at": "2025-10-02T17:58:12.866047+00:00"
+  },
+  {
+    "id": "617b8bf7-a6cf-4360-ab1a-a76ad30dfb71",
+    "name": "Moses Mangomba ",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/dbpyuPsCiDo/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:39.027627+00:00",
+    "updated_at": "2025-10-02T17:58:39.027627+00:00"
+  },
+  {
+    "id": "61f8b915-f52c-4a31-bc3f-7cebe50bfd5c",
+    "name": "Marie Zamor",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/wzyPsl-Dq9A/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:50.84139+00:00",
+    "updated_at": "2025-10-02T17:58:50.84139+00:00"
+  },
+  {
+    "id": "625b7b67-35e7-4337-a134-efd84cb88a66",
+    "name": "Allison LK",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/5rGLOdOhxL4/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:18.654277+00:00",
+    "updated_at": "2025-10-02T17:58:18.654277+00:00"
+  },
+  {
+    "id": "630e5ba0-419c-4d42-8daf-b732f13d4932",
+    "name": "MNC PRODUCTION",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/FhCtaWjTuJk/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:43.011418+00:00",
+    "updated_at": "2025-10-02T17:58:43.011418+00:00"
+  },
+  {
+    "id": "65ec86c6-b1a5-4336-bab0-067efafb8c19",
+    "name": "MANJI",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/srqdwy4_D64/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:13.920373+00:00",
+    "updated_at": "2025-10-02T17:58:13.920373+00:00"
+  },
+  {
+    "id": "6c02ce5d-6bd8-416f-afe3-8471dc669250",
+    "name": "Rose Marie Mengue Minko",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/AGXVHyeEzP0/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:54.0807+00:00",
+    "updated_at": "2025-10-02T17:58:54.0807+00:00"
+  },
+  {
+    "id": "70096374-4124-4741-90d6-7a16811a8acf",
+    "name": "sadet sarichesse",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/eHgaJFEgUk8/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:15.780639+00:00",
+    "updated_at": "2025-10-02T17:58:15.780639+00:00"
+  },
+  {
+    "id": "7121118a-08aa-4b8b-8c2c-b6e75234bc49",
+    "name": "ICC TV",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/HX9NKHUUSaA/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:03.09897+00:00",
+    "updated_at": "2025-10-02T17:58:03.09897+00:00"
+  },
+  {
+    "id": "71a25d6b-0d49-4f50-b8a6-df0a63874964",
+    "name": "LA GLOIRE DE DIEU",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/qS61q-dYcdY/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:56.433181+00:00",
+    "updated_at": "2025-10-02T17:58:56.433181+00:00"
+  },
+  {
+    "id": "76b337ae-bbcd-4709-8235-da523bf0495d",
+    "name": "Jonathan C. Gambela",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/He8GkGZUGsc/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:05.784932+00:00",
+    "updated_at": "2025-10-02T17:58:05.784932+00:00"
+  },
+  {
+    "id": "7daba6bf-3b75-4e81-8c34-5d8721013e2e",
+    "name": "RACHEL ANYEME OFFICIAL",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/t4k4yL8igGQ/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:34.261889+00:00",
+    "updated_at": "2025-10-02T17:58:34.261889+00:00"
+  },
+  {
+    "id": "7de6c6a4-f85e-4554-8b5d-a9940e45bc22",
+    "name": "Elevation Worship",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/f2oxGYpuLkw/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:08.508405+00:00",
+    "updated_at": "2025-10-02T17:58:08.508405+00:00"
+  },
+  {
+    "id": "87506d89-b8f0-4702-9503-e8ef2db1d21c",
+    "name": "Yvan Castanou TV",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/IFIwZBllOYA/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:19.00989+00:00",
+    "updated_at": "2025-10-02T17:58:19.00989+00:00"
+  },
+  {
+    "id": "8ade17ae-89c3-416f-aef8-568b1b603239",
+    "name": "Isaac Serukenya Music",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/i_6_b8adeuU/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:34.740391+00:00",
+    "updated_at": "2025-10-02T17:58:34.740391+00:00"
+  },
+  {
+    "id": "8be391af-8cab-428a-bca3-6c1df32a1f3b",
+    "name": "Michael W. Smith - Topic",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/HwKCvuorI9E/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:07.202266+00:00",
+    "updated_at": "2025-10-02T17:58:07.202266+00:00"
+  },
+  {
+    "id": "8dedcee5-0b76-4b3e-9fe5-bf35ef9bff4f",
+    "name": "DaviD ChrisT ",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/JoH75X0ZvHs/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:11.752216+00:00",
+    "updated_at": "2025-10-02T17:58:11.752216+00:00"
+  },
+  {
+    "id": "90f6bb36-f78b-4cc1-92bd-41fcf88ab83c",
+    "name": "EMCI Musique",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/A_0tjaHQiIY/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:03.918681+00:00",
+    "updated_at": "2025-10-02T17:58:03.918681+00:00"
+  },
+  {
+    "id": "91dd2b67-8bd1-4ebd-a185-a7a5b07cd4ca",
+    "name": "Joshua Israel PF",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/FfotPWc1zCQ/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:27.686687+00:00",
+    "updated_at": "2025-10-02T17:58:27.686687+00:00"
+  },
+  {
+    "id": "92286168-4502-4fb5-8072-7599f46a9a34",
+    "name": "Northland Church",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/4yhgrdkrmB0/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:24.950712+00:00",
+    "updated_at": "2025-10-02T17:58:24.950712+00:00"
+  },
+  {
+    "id": "94351b90-7a7b-4350-aa2c-342942b28d36",
+    "name": "Jesus Image",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/ivUb1K0B0zE/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:16.787735+00:00",
+    "updated_at": "2025-10-02T17:58:16.787735+00:00"
+  },
+  {
+    "id": "9705b54c-7f93-4075-a955-78d84920aece",
+    "name": "Gabriel Eziashi TV",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/ckjxHUAaxeA/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:33.853931+00:00",
+    "updated_at": "2025-10-02T17:58:33.853931+00:00"
+  },
+  {
+    "id": "a292557b-1771-4c30-9b04-d18af3961ebb",
+    "name": "ICC MUSIQUE",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/kPHeaZpF4QU/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:06.182262+00:00",
+    "updated_at": "2025-10-02T17:58:06.182262+00:00"
+  },
+  {
+    "id": "a3af077b-56af-405e-9ab8-21881d3278d4",
+    "name": "Paul Baloche - Topic",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/r5KpIpEFT5o/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:06.793406+00:00",
+    "updated_at": "2025-10-02T17:58:06.793406+00:00"
+  },
+  {
+    "id": "a9afef61-8097-4e4e-9c8f-26931281dcf0",
+    "name": "Madin Gospel Festival",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/c5K5cYUWDf0/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:22.744933+00:00",
+    "updated_at": "2025-10-02T17:58:22.744933+00:00"
+  },
+  {
+    "id": "b22ffee4-5820-4146-b5ed-d448e5069446",
+    "name": "S𝒑𝒊𝒓𝒊𝒕 𝑭𝒊𝒍𝒍𝒆𝒅 𝑻𝑽",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/cEd5Tt4cGok/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:14.375419+00:00",
+    "updated_at": "2025-10-02T17:58:14.375419+00:00"
+  },
+  {
+    "id": "b3921065-5977-4228-9b0b-6e9d6c64f204",
+    "name": "William McDowell Music",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/N8zQuWTwk-Y/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:27.085547+00:00",
+    "updated_at": "2025-10-02T17:58:27.085547+00:00"
+  },
+  {
+    "id": "b42b0dd9-c39a-4ea5-8b0c-ac6ac9fa692d",
+    "name": "Teclas Pretas",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/l3T9Jozo9p8/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:49.393803+00:00",
+    "updated_at": "2025-10-02T17:58:49.393803+00:00"
+  },
+  {
+    "id": "b6e9af08-9d8c-4c52-b30b-3d829491017c",
+    "name": "Michael Manya",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/xTsxAqBhVWQ/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:08.947647+00:00",
+    "updated_at": "2025-10-02T17:58:08.947647+00:00"
+  },
+  {
+    "id": "b7ec9ea7-db68-42a9-b44a-3e49010e5aa7",
+    "name": "Raynold Boudreau",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/nRDlSMgik7w/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:12.129853+00:00",
+    "updated_at": "2025-10-02T17:58:12.129853+00:00"
+  },
+  {
+    "id": "bb340eb7-4ae3-4afe-b16d-888c0b985f08",
+    "name": "Jonathan Munghongwa Official ",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/fkxAyeGc-rc/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:09.970712+00:00",
+    "updated_at": "2025-10-02T17:58:09.970712+00:00"
+  },
+  {
+    "id": "bb6a02f7-6392-40cd-964c-d11a3d1dc059",
+    "name": "Bruma Hostel ",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/vzA-8hVwJs8/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:25.885513+00:00",
+    "updated_at": "2025-10-02T17:58:25.885513+00:00"
+  },
+  {
+    "id": "bc6d5dec-1e78-4a03-9797-d3f519b40e1d",
+    "name": "Pasteur Mohammed SANOGO",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/PXSRfHjghsQ/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:10.951447+00:00",
+    "updated_at": "2025-10-02T17:58:10.951447+00:00"
+  },
+  {
+    "id": "bff65c93-e698-4441-aed4-a7e399211a27",
+    "name": "2Lcenter",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/_1wdwl_t_ek/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:14.827908+00:00",
+    "updated_at": "2025-10-02T17:58:14.827908+00:00"
+  },
+  {
+    "id": "c371c1c1-c3a5-4029-af39-cf5fa0376574",
+    "name": "Grace Narciso",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/XgrKCHd06sU/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:28.05409+00:00",
+    "updated_at": "2025-10-02T17:58:28.05409+00:00"
+  },
+  {
+    "id": "c584914a-601e-40c1-b59c-db5956937cb2",
+    "name": "Ghislain Biabatantou TV",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/7SPX_I0juzI/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:55.591854+00:00",
+    "updated_at": "2025-10-02T17:58:55.591854+00:00"
+  },
+  {
+    "id": "c93bbe7e-5bd5-4035-8bcb-7583113be55c",
+    "name": "Dans Sa Gloire",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/HVPb3obUmxc/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:09.37855+00:00",
+    "updated_at": "2025-10-02T17:58:09.37855+00:00"
+  },
+  {
+    "id": "cb32ccd3-a633-4132-8cf0-6b52a1c54492",
+    "name": "Dena Mwana",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/JPyyX4zFraU/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:15.178042+00:00",
+    "updated_at": "2025-10-02T17:58:15.178042+00:00"
+  },
+  {
+    "id": "d1d5da1c-5d6d-4808-a862-0f738c9e269e",
+    "name": "Sandra Kouame",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/-d0tyye82EU/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:51.942612+00:00",
+    "updated_at": "2025-10-02T17:58:51.942612+00:00"
+  },
+  {
+    "id": "d28295e0-d3e5-4436-a50a-b18424b01cb9",
+    "name": "eglise Momentum",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/pla64jwYnG4/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:32.92124+00:00",
+    "updated_at": "2025-10-02T17:58:32.92124+00:00"
+  },
+  {
+    "id": "d3a1f423-cca1-42a5-a3e7-3a82c5026927",
+    "name": "Prosper TSB",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/0DJOiTn1AbE/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:04.959446+00:00",
+    "updated_at": "2025-10-02T17:58:04.959446+00:00"
+  },
+  {
+    "id": "e56ef645-74ab-4ac1-8aaf-b13e4c4bdcee",
+    "name": "EMCI TV",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/MiFpAs-0yuE/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:03.540537+00:00",
+    "updated_at": "2025-10-02T17:58:03.540537+00:00"
+  },
+  {
+    "id": "e799d3af-782b-4433-be86-e3b6233b343a",
+    "name": "Emmanuel Encounter",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/1Mbxr8XrsWs/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:54.414511+00:00",
+    "updated_at": "2025-10-02T17:58:54.414511+00:00"
+  },
+  {
+    "id": "e7b99989-5794-4349-9fa9-02dfd6fa57ec",
+    "name": "Michael",
+    "bio": null,
+    "image_url": null,
+    "website": null,
+    "created_at": "2025-11-03T04:01:33.729144+00:00",
+    "updated_at": "2025-11-03T04:01:33.729144+00:00"
+  },
+  {
+    "id": "e83a5e5a-f268-41c0-a83b-9ee8dd90cef0",
+    "name": "The Summit Bible Church",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/HqFk_AezG5s/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:36.740869+00:00",
+    "updated_at": "2025-10-02T17:58:36.740869+00:00"
+  },
+  {
+    "id": "eeffa1c1-55a7-405e-be10-e00e1c290f9a",
+    "name": "Hillsong Worship",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/teUxQpnhezY/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:12.481006+00:00",
+    "updated_at": "2025-10-02T17:58:12.481006+00:00"
+  },
+  {
+    "id": "ef8ba260-4619-4990-9164-70973fc13d64",
+    "name": "dominique SENDE TV",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/vvjBlM6hwtg/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:25.510306+00:00",
+    "updated_at": "2025-10-02T17:58:25.510306+00:00"
+  },
+  {
+    "id": "f18e0459-9e5e-4744-9662-fa71c7bf08bc",
+    "name": "ICChrist TV",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/eBjyBpxA0h0/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:37.325039+00:00",
+    "updated_at": "2025-10-02T17:58:37.325039+00:00"
+  },
+  {
+    "id": "f3346cd6-0e59-4cde-b3f4-fe64f7ebcb4f",
+    "name": "Cassi Kalala Tshimpi Officiel",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/1LdH8_GYGvc/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:52.684877+00:00",
+    "updated_at": "2025-10-02T17:58:52.684877+00:00"
+  },
+  {
+    "id": "f3d79cdb-ede0-43be-98c7-a0e0d092ce03",
+    "name": "VIBES ÉVANGÉLIQUES ",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/j6OLT_d7wKU/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:20.292281+00:00",
+    "updated_at": "2025-10-02T17:58:20.292281+00:00"
+  },
+  {
+    "id": "f8e7f045-9a77-433a-974c-f3ad78f8330a",
+    "name": "Église Nouvelle Vie",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/6Kcvq2iTnYA/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:19.371477+00:00",
+    "updated_at": "2025-10-02T17:58:19.371477+00:00"
+  },
+  {
+    "id": "f91d6c72-95b7-4135-b5c2-e77358ce50cf",
+    "name": "Esther Do",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/dN_kn7wiiKM/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:49.981862+00:00",
+    "updated_at": "2025-10-02T17:58:49.981862+00:00"
+  },
+  {
+    "id": "fc8004d9-dbf8-4c14-b4bf-932b41b4af9b",
+    "name": "TashaCobbsVEVO",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/ucY6NwQTI3M/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:21.279853+00:00",
+    "updated_at": "2025-10-02T17:58:21.279853+00:00"
+  },
+  {
+    "id": "fd6813ed-807f-4fd6-8f2b-fd41747ff553",
+    "name": "Église Plénitude",
+    "bio": "Artist from YouTube channel",
+    "image_url": "https://i.ytimg.com/vi/1rpvn3_FtmU/hqdefault.jpg",
+    "website": null,
+    "created_at": "2025-10-02T17:58:13.361641+00:00",
+    "updated_at": "2025-10-02T17:58:13.361641+00:00"
+  }
+]

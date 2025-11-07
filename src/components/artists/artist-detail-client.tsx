@@ -98,7 +98,7 @@ const ArtistDetailClient: React.FC<ArtistDetailClientProps> = ({ artist }) => {
               href={artist.website}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-outline-primary"
+              className="btn-six tran3s"
             >
               <i className="bi bi-link-45deg me-1"></i>
               Visit Website
@@ -146,7 +146,7 @@ const ArtistDetailClient: React.FC<ArtistDetailClientProps> = ({ artist }) => {
 
       {/* Back Link */}
       <div className="mt-4">
-        <Link href="/artists" className="btn btn-outline-secondary">
+        <Link href="/artists" className="btn-six tran3s">
           <i className="bi bi-arrow-left me-1"></i>
           Back to Artists
         </Link>

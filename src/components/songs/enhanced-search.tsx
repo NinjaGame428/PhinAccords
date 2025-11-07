@@ -91,10 +91,26 @@ const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.length >= 2 && setShowResults(true)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowResults(false)
+              setQuery('')
+            } else if (e.key === 'ArrowDown' && showResults && results.length > 0) {
+              e.preventDefault()
+              const firstResult = document.querySelector('.dropdown-item') as HTMLElement
+              firstResult?.focus()
+            }
+          }}
+          aria-label={t('songs.search')}
+          aria-expanded={showResults}
+          aria-autocomplete="list"
+          aria-controls="search-results"
+          role="combobox"
+          tabIndex={0}
         />
         {query && (
           <button
-            className="btn btn-outline-secondary"
+            className="btn-six tran3s"
             type="button"
             onClick={() => {
               setQuery('')
@@ -108,13 +124,35 @@ const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
       </div>
 
       {showResults && results.length > 0 && (
-        <div className="dropdown-menu show w-100 mt-1" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-          {results.map((song) => (
+        <div
+          id="search-results"
+          className="dropdown-menu show w-100 mt-1"
+          style={{ maxHeight: '400px', overflowY: 'auto' }}
+          role="listbox"
+          aria-label="Search results"
+        >
+          {results.map((song, index) => (
             <Link
               key={song.id}
               href={`/songs/${song.slug}`}
               className="dropdown-item"
               onClick={() => handleResultClick(song)}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault()
+                  const next = e.currentTarget.nextElementSibling as HTMLElement
+                  next?.focus()
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault()
+                  const prev = e.currentTarget.previousElementSibling as HTMLElement
+                  prev?.focus()
+                } else if (e.key === 'Escape') {
+                  setShowResults(false)
+                }
+              }}
+              role="option"
+              aria-label={`${song.title} by ${song.artist || song.artist_data?.name || 'Unknown Artist'}`}
+              tabIndex={index === 0 ? 0 : -1}
             >
               <div className="d-flex justify-content-between">
                 <div>

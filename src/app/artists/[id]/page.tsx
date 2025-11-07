@@ -2,8 +2,11 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Wrapper from '@/layout/wrapper'
 import HeaderTwo from '@/layout/header/header-two'
+import BreadcrumbOne from '@/components/breadcrumb/breadcrumb-one'
 import FooterOne from '@/layout/footer/footer-one'
 import ArtistDetailClient from '@/components/artists/artist-detail-client'
+import about_bg from '@/assets/images/media/img_26.jpg'
+import shape from '@/assets/images/shape/shape_25.svg'
 
 interface PageProps {
   params: Promise<{
@@ -58,6 +61,15 @@ export default async function ArtistDetailPage({ params }: PageProps) {
       <div className="main-page-wrapper">
         <HeaderTwo />
         <main>
+          <BreadcrumbOne
+            title={artist.name}
+            subtitle={artist.bio || `Explore songs by ${artist.name}`}
+            page="Artist Details"
+            bg_img={about_bg}
+            shape={shape}
+            style_2={true}
+          />
+
           <div className="container py-5">
             <ArtistDetailClient artist={artist} />
           </div>

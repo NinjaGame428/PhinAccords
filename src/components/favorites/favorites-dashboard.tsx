@@ -196,7 +196,7 @@ const FavoritesDashboard: React.FC = () => {
           <p className="text-muted">
             Start exploring songs and resources, and add them to your favorites!
           </p>
-          <Link href="/" className="btn btn-primary">
+          <Link href="/" className="btn-one tran3s">
             Browse Songs
           </Link>
         </div>

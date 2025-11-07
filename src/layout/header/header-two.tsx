@@ -6,12 +6,17 @@ import Link from "next/link";
 import Navbar from "./navbar";
 import useSticky from "@/hooks/use-sticky";
 import LoginModal from "@/components/common/login-modal";
+import LanguageSwitcher from "@/components/common/language-switcher";
 
-const HeaderTwo = () => {
+interface HeaderTwoProps {
+  solid?: boolean;
+}
+
+const HeaderTwo = ({ solid = false }: HeaderTwoProps) => {
   const {sticky} = useSticky();
   return (
     <>
-      <header className={`theme-main-menu menu-overlay menu-style-one white-vr sticky-menu ${sticky?'fixed':''}`}>
+      <header className={`theme-main-menu ${!solid ? 'menu-overlay' : ''} menu-style-one white-vr sticky-menu ${sticky?'fixed':''}`} style={solid && !sticky ? { background: '#0C3A30' } : undefined}>
         <div className="inner-content position-relative">
           <div className="top-header">
             <div className="d-flex align-items-center justify-content-between">
@@ -26,10 +31,13 @@ const HeaderTwo = () => {
               </div>
 
               <div className="right-widget ms-auto ms-lg-0 me-3 me-lg-0 order-lg-3">
-                <ul className="d-flex align-items-center style-none">
+                <ul className="d-flex align-items-center style-none gap-3">
+                  <li className="d-none d-lg-block">
+                    <LanguageSwitcher />
+                  </li>
                   <li className="d-none d-md-block">
-                    <Link href="/contact" className="btn-one tran3s">
-                      Get in Touch
+                    <Link href="/login" className="btn-one tran3s">
+                      Login
                     </Link>
                   </li>
                 </ul>

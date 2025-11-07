@@ -73,7 +73,7 @@ const SongDetailClient: React.FC<SongDetailClientProps> = ({ song }) => {
               </p>
             </div>
             <button
-              className="btn btn-outline-primary"
+              className="btn-six tran3s"
               onClick={handleFavoriteToggle}
               aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
             >
@@ -236,7 +236,7 @@ const SongDetailClient: React.FC<SongDetailClientProps> = ({ song }) => {
 
       {/* Back Link */}
       <div className="mt-4">
-        <Link href="/" className="btn btn-outline-secondary">
+        <Link href="/" className="btn-six tran3s">
           <i className="bi bi-arrow-left"></i> Back to Songs
         </Link>
       </div>

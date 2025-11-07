@@ -1,117 +1,231 @@
 # Deployment Guide
 
-## Deploy to Vercel
+This guide covers the deployment process for PhinAccords application.
 
-### Option 1: Deploy via Vercel Dashboard (Recommended)
+## Prerequisites
 
-1. **Push your code to GitHub:**
+- Node.js 18+ installed
+- npm or yarn package manager
+- Supabase account and project
+- Vercel account (for hosting) or your own server
+
+## Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```env
+# Supabase Configuration (Required)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Database Configuration (Optional - for direct database access)
+POSTGRES_URL=postgres://postgres.your-project-id:password@aws-1-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require
+POSTGRES_URL_NON_POOLING=postgres://postgres.your-project-id:password@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
+POSTGRES_USER=postgres
+POSTGRES_HOST=db.your-project-id.supabase.co
+POSTGRES_PASSWORD=your-password
+POSTGRES_DATABASE=postgres
+
+# Supabase JWT Secret (Optional - for server-side operations)
+SUPABASE_JWT_SECRET=your-jwt-secret
+
+# YouTube API Key (Optional - for video integration)
+YOUTUBE_API_KEY=your-youtube-api-key
+
+# Site URL (Required for production)
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+```
+
+## Database Setup
+
+### 1. Run Migration Scripts
+
+Execute the SQL migration file in your Supabase SQL Editor:
+
+```bash
+# The migration file is located at:
+supabase/migrations/001_initial_schema.sql
+```
+
+### 2. Create Indexes
+
+The migration script includes indexes, but verify they exist:
+
+- `idx_songs_title` on `songs(title)`
+- `idx_songs_artist_id` on `songs(artist_id)`
+- `idx_songs_genre` on `songs(genre)`
+- `idx_artists_name` on `artists(name)`
+
+### 3. Set Up RLS Policies
+
+The migration script includes basic RLS policies. Review and adjust as needed:
+
+- Public read access for songs, artists, resources
+- User-specific access for user data
+- Admin access for management operations
+
+### 4. Seed Initial Data (Optional)
+
+Create seed data for:
+- Default admin user
+- Sample songs
+- Sample artists
+- Sample resources
+
+## Build Process
+
+### Local Build
+
+1. **Install Dependencies**:
    ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin <your-github-repo-url>
-   git push -u origin main
+   npm install --legacy-peer-deps
    ```
 
-2. **Connect to Vercel:**
-   - Go to [vercel.com](https://vercel.com)
-   - Sign in with your GitHub account
-   - Click "Add New Project"
-   - Import your GitHub repository
-   - Vercel will auto-detect Next.js settings
-   - Click "Deploy"
+2. **Build Application**:
+   ```bash
+   npm run build
+   ```
 
-3. **Configure Build Settings:**
-   - Root Directory: `babun-main` (if deploying from monorepo)
-   - Framework Preset: Next.js
-   - Build Command: `npm run build`
-   - Output Directory: `.next`
+3. **Start Production Server**:
+   ```bash
+   npm start
+   ```
 
-### Option 2: Deploy via Vercel CLI
+### Vercel Deployment
 
-1. **Install Vercel CLI:**
+1. **Install Vercel CLI** (if not already installed):
    ```bash
    npm i -g vercel
    ```
 
-2. **Deploy:**
+2. **Login to Vercel**:
    ```bash
-   cd babun-main
-   vercel
+   vercel login
    ```
 
-3. **Follow the prompts:**
-   - Link to existing project or create new
-   - Confirm settings
-   - Deploy!
+3. **Link Project**:
+   ```bash
+   vercel link
+   ```
 
-4. **For production:**
+4. **Set Environment Variables**:
+   ```bash
+   vercel env add NEXT_PUBLIC_SUPABASE_URL
+   vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY
+   vercel env add SUPABASE_SERVICE_ROLE_KEY
+   # Add all other required variables
+   ```
+
+   Or set them in the Vercel dashboard:
+   - Go to Project Settings → Environment Variables
+   - Add all required variables for Production, Preview, and Development
+
+5. **Deploy**:
    ```bash
    vercel --prod
    ```
 
-## Deploy to Supabase
+### Manual Server Deployment
 
-### Note: Supabase is primarily for backend/database services
-
-Supabase doesn't host Next.js applications directly. However, you can:
-
-### Option 1: Use Supabase for Database/Backend Only
-
-1. **Create a Supabase Project:**
-   - Go to [supabase.com](https://supabase.com)
-   - Create a new project
-   - Get your project URL and API keys
-
-2. **Add Environment Variables:**
-   Create `.env.local` file:
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=your-project-url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-   ```
-
-3. **Install Supabase Client (if needed):**
+1. **Build the application**:
    ```bash
-   npm install @supabase/supabase-js
+   npm run build
    ```
 
-4. **Deploy Frontend to Vercel:**
-   - Use Vercel for hosting (as above)
-   - Add the same environment variables in Vercel dashboard
+2. **Copy files to server**:
+   - `.next` folder
+   - `public` folder
+   - `package.json`
+   - `node_modules` (or run `npm install --production` on server)
 
-### Option 2: Use Supabase Edge Functions (for API routes)
+3. **Set environment variables** on the server
 
-If you need serverless functions, you can use Supabase Edge Functions alongside your Vercel deployment.
+4. **Start the application**:
+   ```bash
+   npm start
+   ```
 
-## Environment Variables
+5. **Use a process manager** (PM2 recommended):
+   ```bash
+   npm install -g pm2
+   pm2 start npm --name "phinaccords" -- start
+   pm2 save
+   pm2 startup
+   ```
 
-Add these to Vercel Dashboard → Settings → Environment Variables:
+## Post-Deployment Checklist
 
-- `NODE_ENV=production`
-- Any Supabase keys if using Supabase
-- Any other API keys your app needs
-
-## Post-Deployment
-
-1. **Verify Build:**
-   - Check Vercel dashboard for build logs
-   - Ensure no errors
-
-2. **Test Production URL:**
-   - Visit your Vercel deployment URL
-   - Test all functionality
-
-3. **Custom Domain (Optional):**
-   - Go to Vercel Dashboard → Settings → Domains
-   - Add your custom domain
-   - Update DNS records as instructed
+- [ ] Verify all environment variables are set
+- [ ] Test database connection
+- [ ] Verify API routes are working
+- [ ] Test authentication flow
+- [ ] Check error logging
+- [ ] Verify caching is working
+- [ ] Test responsive design on mobile/tablet
+- [ ] Verify accessibility features
+- [ ] Check performance metrics
+- [ ] Set up monitoring (optional)
 
 ## Troubleshooting
 
-- **Build Fails:** Check build logs in Vercel dashboard
-- **Environment Variables:** Ensure all required vars are set in Vercel
-- **Image Optimization:** Next.js images work automatically on Vercel
-- **SCSS Issues:** Already configured in `next.config.js`
+### Build Errors
 
+- **Peer dependency conflicts**: Use `--legacy-peer-deps` flag
+- **TypeScript errors**: Check `tsconfig.json` and fix type issues
+- **Missing environment variables**: Ensure all required variables are set
+
+### Runtime Errors
+
+- **Database connection issues**: Verify Supabase credentials
+- **Authentication errors**: Check JWT secret and session configuration
+- **API route errors**: Check server logs and error handling
+
+### Performance Issues
+
+- **Slow page loads**: Check caching configuration
+- **Large bundle size**: Review code splitting and dynamic imports
+- **Database queries**: Check indexes and query optimization
+
+## Monitoring
+
+### Recommended Tools
+
+- **Vercel Analytics**: Built-in analytics for Vercel deployments
+- **Sentry**: Error tracking and monitoring
+- **Supabase Dashboard**: Database monitoring and logs
+
+### Key Metrics to Monitor
+
+- API response times
+- Error rates
+- Database query performance
+- Cache hit rates
+- User activity
+
+## Security Checklist
+
+- [ ] Environment variables are not exposed in client-side code
+- [ ] API routes have proper authentication
+- [ ] Rate limiting is enabled
+- [ ] CORS is properly configured
+- [ ] SQL injection prevention (using parameterized queries)
+- [ ] XSS prevention (React auto-escaping)
+- [ ] HTTPS is enabled
+- [ ] Secure cookies are set
+- [ ] RLS policies are active
+
+## Rollback Procedure
+
+If deployment fails:
+
+1. **Vercel**: Use the deployment history to rollback to previous version
+2. **Manual**: Restore previous build and restart server
+3. **Database**: Restore from backup if schema changes were made
+
+## Support
+
+For issues or questions:
+- Check the project documentation
+- Review error logs
+- Contact the development team

@@ -52,7 +52,7 @@ const AdminDashboardClient: React.FC = () => {
     <div className="admin-dashboard">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Admin Dashboard</h1>
-        <Link href="/dashboard" className="btn btn-outline-secondary">
+        <Link href="/dashboard" className="btn-six tran3s">
           <i className="bi bi-arrow-left me-1"></i>
           Back to Dashboard
         </Link>
@@ -141,27 +141,27 @@ const AdminDashboardClient: React.FC = () => {
             <div className="card-body">
               <h5 className="card-title mb-3">Quick Actions</h5>
               <div className="d-grid gap-2">
-                <Link href="/admin/songs" className="btn btn-outline-primary">
+                <Link href="/admin/songs" className="btn-six tran3s">
                   <i className="bi bi-music-note-list me-2"></i>
                   Manage Songs
                 </Link>
-                <Link href="/admin/artists" className="btn btn-outline-success">
+                <Link href="/admin/artists" className="btn-six tran3s">
                   <i className="bi bi-person-badge me-2"></i>
                   Manage Artists
                 </Link>
-                <Link href="/admin/users" className="btn btn-outline-warning">
+                <Link href="/admin/users" className="btn-six tran3s">
                   <i className="bi bi-people me-2"></i>
                   Manage Users
                 </Link>
-                <Link href="/admin/resources" className="btn btn-outline-info">
+                <Link href="/admin/resources" className="btn-six tran3s">
                   <i className="bi bi-file-earmark-text me-2"></i>
                   Manage Resources
                 </Link>
-                <Link href="/admin/analytics" className="btn btn-outline-secondary">
+                <Link href="/admin/analytics" className="btn-six tran3s">
                   <i className="bi bi-graph-up me-2"></i>
                   View Analytics
                 </Link>
-                <Link href="/admin/settings" className="btn btn-outline-dark">
+                <Link href="/admin/settings" className="btn-six tran3s">
                   <i className="bi bi-gear me-2"></i>
                   System Settings
                 </Link>

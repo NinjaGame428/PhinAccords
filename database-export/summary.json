@@ -1,0 +1,21 @@
+{
+  "timestamp": "2025-11-07T12:57:59.212Z",
+  "total_tables": 13,
+  "successful_tables": 13,
+  "failed_tables": 0,
+  "counts": {
+    "songs": 15,
+    "artists": 80,
+    "piano_chords": 935,
+    "resources": 0,
+    "users": 0,
+    "favorites": 0,
+    "ratings": 0,
+    "song_requests": 0,
+    "user_profiles": 0,
+    "email_campaigns": 0,
+    "user_activities": 0,
+    "user_analytics": 0,
+    "user_sessions": 0
+  }
+}

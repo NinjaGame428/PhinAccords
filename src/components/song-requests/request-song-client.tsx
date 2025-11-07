@@ -126,7 +126,7 @@ const RequestSongClient: React.FC = () => {
           </p>
           <div className="d-flex gap-2 justify-content-center">
             <button
-              className="btn btn-primary"
+              className="btn-one tran3s"
               onClick={() => {
                 setIsSubmitted(false)
                 setFormData({
@@ -143,7 +143,7 @@ const RequestSongClient: React.FC = () => {
             >
               Submit Another Request
             </button>
-            <button className="btn btn-outline-secondary" onClick={() => router.push('/')}>
+            <button className="btn-six tran3s" onClick={() => router.push('/')}>
               Back to Home
             </button>
           </div>

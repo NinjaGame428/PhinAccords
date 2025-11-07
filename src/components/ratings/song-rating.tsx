@@ -112,30 +112,51 @@ const SongRating: React.FC<SongRatingProps> = ({ songId, initialRating, initialC
 
           {/* Star Rating */}
           <div className="mb-3">
-            <div className="d-flex align-items-center gap-2">
-              <span className="me-2">Rating:</span>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  className="btn btn-link p-0 border-0"
-                  onMouseEnter={() => setHoveredRating(star)}
-                  onMouseLeave={() => setHoveredRating(0)}
-                  onClick={() => handleRatingClick(star)}
-                  disabled={loading}
-                  style={{ fontSize: '1.5rem', lineHeight: 1 }}
-                >
-                  <i
-                    className={`bi ${
-                      star <= (hoveredRating || selectedRating)
-                        ? 'bi-star-fill text-warning'
-                        : 'bi-star text-muted'
-                    }`}
-                  ></i>
-                </button>
-              ))}
+            <div className="d-flex align-items-center gap-2" role="group" aria-label="Rating">
+              <span className="me-2" id="rating-label">Rating:</span>
+              <div role="radiogroup" aria-labelledby="rating-label" aria-required="true">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    className="btn btn-link p-0 border-0 touch-target"
+                    onMouseEnter={() => setHoveredRating(star)}
+                    onMouseLeave={() => setHoveredRating(0)}
+                    onClick={() => handleRatingClick(star)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        handleRatingClick(star)
+                      } else if (e.key === 'ArrowRight' && star < 5) {
+                        e.preventDefault()
+                        const next = e.currentTarget.nextElementSibling as HTMLElement
+                        next?.focus()
+                      } else if (e.key === 'ArrowLeft' && star > 1) {
+                        e.preventDefault()
+                        const prev = e.currentTarget.previousElementSibling as HTMLElement
+                        prev?.focus()
+                      }
+                    }}
+                    disabled={loading}
+                    style={{ fontSize: '1.5rem', lineHeight: 1 }}
+                    aria-label={`Rate ${star} out of 5 stars`}
+                    aria-pressed={selectedRating === star}
+                    role="radio"
+                    tabIndex={star === 1 ? 0 : selectedRating === star ? 0 : -1}
+                  >
+                    <i
+                      className={`bi ${
+                        star <= (hoveredRating || selectedRating)
+                          ? 'bi-star-fill text-warning'
+                          : 'bi-star text-muted'
+                      }`}
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+                ))}
+              </div>
               {selectedRating > 0 && (
-                <span className="ms-2 text-muted small">
+                <span className="ms-2 text-muted small" aria-live="polite">
                   {selectedRating} out of 5
                 </span>
               )}
@@ -159,11 +180,26 @@ const SongRating: React.FC<SongRatingProps> = ({ songId, initialRating, initialC
           </div>
 
           <button
-            className="btn btn-primary"
+            className="btn-one tran3s touch-target"
             onClick={handleCommentSubmit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                handleCommentSubmit()
+              }
+            }}
             disabled={loading || selectedRating === 0}
+            aria-label="Submit rating"
+            tabIndex={0}
           >
-            {loading ? 'Submitting...' : 'Submit Rating'}
+            {loading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Submitting...
+              </>
+            ) : (
+              'Submit Rating'
+            )}
           </button>
         </div>
       </div>

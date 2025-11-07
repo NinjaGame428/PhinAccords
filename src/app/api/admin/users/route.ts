@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { requireAdmin } from '@/lib/auth-middleware'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Add admin authentication check
+    // Rate limiting
+    const rateLimitResult = await rateLimit({ maxRequests: 100, windowMs: 60 * 1000 })(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    }
+
+    // Require admin
+    const authResult = await requireAdmin(request)
+    if (authResult.error) {
+      return authResult.error
+    }
+
     const supabase = createServerClient()
     const searchParams = request.nextUrl.searchParams
 

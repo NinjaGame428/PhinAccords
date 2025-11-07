@@ -1,44 +1,83 @@
-import React from "react";
-import { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
-// internal
-import Wrapper from "@/layout/wrapper";
-import HeaderOne from "@/layout/header/header-one";
-import ils_1 from "@/assets/images/assets/ils_05.svg";
-import ils_2 from "@/assets/images/assets/ils_06.svg";
+import { Metadata } from 'next'
+import Link from 'next/link'
+import Wrapper from '@/layout/wrapper'
+import HeaderTwo from '@/layout/header/header-two'
+import FooterOne from '@/layout/footer/footer-one'
+import EnhancedSearch from '@/components/songs/enhanced-search'
 
 export const metadata: Metadata = {
-  title: "Not Found Page",
-};
+  title: '404 - Page Not Found - PhinAccords',
+  description: 'The page you are looking for could not be found',
+}
 
-const NotFound = () => {
+export default function NotFound() {
   return (
     <Wrapper>
       <div className="main-page-wrapper">
-        {/* header start */}
-        <HeaderOne />
-        {/* header end */}
+        <HeaderTwo />
         <main>
-          <div className="error-page text-center d-flex align-items-center justify-content-center flex-column light-bg position-relative">
-            <h1 className="font-magnita">404</h1>
-            <h2 className="fw-bold">Page Not Found</h2>
-            <p className="text-lg mb-45">
-              Publishing industries for previewing layouts & visual mockups
-              used.
-            </p>
-            <div>
-              <Link href="/" className="btn-four">
-                Go Back
-              </Link>
+          <div className="container py-5">
+            <div className="row justify-content-center">
+              <div className="col-lg-8 text-center">
+                <div className="mb-4">
+                  <h1 className="display-1 fw-bold text-primary">404</h1>
+                  <h2 className="h3 mb-3">Page Not Found</h2>
+                  <p className="text-muted mb-4">
+                    The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
+                  </p>
+                </div>
+
+                <div className="mb-4">
+                  <EnhancedSearch placeholder="Search for songs, artists, or resources..." />
+                </div>
+
+                <div className="d-flex flex-wrap justify-content-center gap-3 mb-4">
+                  <Link href="/" className="btn btn-primary touch-target">
+                    <i className="bi bi-house me-2" aria-hidden="true"></i>
+                    Go Home
+                  </Link>
+                  <Link href="/songs" className="btn btn-outline-primary touch-target">
+                    <i className="bi bi-music-note-beamed me-2" aria-hidden="true"></i>
+                    Browse Songs
+                  </Link>
+                  <Link href="/artists" className="btn btn-outline-primary touch-target">
+                    <i className="bi bi-people me-2" aria-hidden="true"></i>
+                    Browse Artists
+                  </Link>
+                  <Link href="/resources" className="btn btn-outline-primary touch-target">
+                    <i className="bi bi-book me-2" aria-hidden="true"></i>
+                    Browse Resources
+                  </Link>
+                </div>
+
+                <div className="card bg-light">
+                  <div className="card-body">
+                    <h3 className="h5 mb-3">Popular Pages</h3>
+                    <div className="d-flex flex-wrap justify-content-center gap-3">
+                      <Link href="/about" className="text-decoration-none">
+                        About Us
+                      </Link>
+                      <span className="text-muted">•</span>
+                      <Link href="/contact" className="text-decoration-none">
+                        Contact
+                      </Link>
+                      <span className="text-muted">•</span>
+                      <Link href="/tips" className="text-decoration-none">
+                        Tips
+                      </Link>
+                      <span className="text-muted">•</span>
+                      <Link href="/piano-chords" className="text-decoration-none">
+                        Piano Chords
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <Image src={ils_1} alt="shape" className="lazy-img shapes shape_01"/>
-            <Image src={ils_2} alt="shape" className="lazy-img shapes shape_02"/>
           </div>
         </main>
+        <FooterOne />
       </div>
     </Wrapper>
-  );
-};
-
-export default NotFound;
+  )
+}

@@ -7,6 +7,7 @@ import icon_1 from "@/assets/images/icon/icon_14.svg";
 import icon_2 from "@/assets/images/icon/icon_15.svg";
 import menu_data from "@/data/menu-data";
 import { usePathname } from "next/navigation";
+import LanguageSwitcher from "@/components/common/language-switcher";
 
 const Navbar = ({logo_white=false}:{logo_white?:boolean}) => {
   const pathname = usePathname()
@@ -102,6 +103,9 @@ const Navbar = ({logo_white=false}:{logo_white?:boolean}) => {
           )}
         </li>
       ))}
+      <li className="d-lg-none ps-2 pe-2">
+        <LanguageSwitcher className="mb-3" />
+      </li>
       <li className="d-md-none ps-2 pe-2">
         <a
           href="#"

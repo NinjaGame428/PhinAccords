@@ -139,7 +139,7 @@ const AdminArtistsClient: React.FC = () => {
     <div className="admin-artists">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Manage Artists</h1>
-        <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+        <button className="btn-one tran3s" onClick={() => setShowAddModal(true)}>
           <i className="bi bi-plus-circle me-1"></i>
           Add Artist
         </button>
@@ -207,13 +207,13 @@ const AdminArtistsClient: React.FC = () => {
                     <td>
                       <div className="btn-group btn-group-sm">
                         <button
-                          className="btn btn-outline-primary"
+                          className="btn-six tran3s"
                           onClick={() => handleEdit(artist)}
                         >
                           <i className="bi bi-pencil"></i>
                         </button>
                         <button
-                          className="btn btn-outline-danger"
+                          className="btn-six tran3s"
                           onClick={() => handleDelete(artist.id)}
                         >
                           <i className="bi bi-trash"></i>
@@ -288,7 +288,7 @@ const AdminArtistsClient: React.FC = () => {
                 <div className="modal-footer">
                   <button
                     type="button"
-                    className="btn btn-secondary"
+                    className="btn-six tran3s"
                     onClick={() => {
                       setShowAddModal(false)
                       setEditingArtist(null)
@@ -297,7 +297,7 @@ const AdminArtistsClient: React.FC = () => {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-primary">
+                  <button type="submit" className="btn-one tran3s">
                     {editingArtist ? 'Update' : 'Add'} Artist
                   </button>
                 </div>

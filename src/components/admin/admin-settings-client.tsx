@@ -99,7 +99,7 @@ const AdminSettingsClient: React.FC = () => {
             </div>
           </div>
           <button
-            className="btn btn-primary mt-3"
+            className="btn-one tran3s mt-3"
             onClick={() => handleSave('General')}
             disabled={loading}
           >
@@ -134,7 +134,7 @@ const AdminSettingsClient: React.FC = () => {
               </div>
             </div>
           </div>
-          <button className="btn btn-outline-primary mt-3">
+          <button className="btn-six tran3s mt-3">
             <i className="bi bi-download me-1"></i>
             Create Backup
           </button>
@@ -180,7 +180,7 @@ const AdminSettingsClient: React.FC = () => {
             </div>
           </div>
           <button
-            className="btn btn-primary mt-3"
+            className="btn-one tran3s mt-3"
             onClick={() => handleSave('Security')}
             disabled={loading}
           >
@@ -233,7 +233,7 @@ const AdminSettingsClient: React.FC = () => {
             </div>
           </div>
           <button
-            className="btn btn-primary mt-3"
+            className="btn-one tran3s mt-3"
             onClick={() => handleSave('Notifications')}
             disabled={loading}
           >
@@ -299,7 +299,7 @@ const AdminSettingsClient: React.FC = () => {
             </div>
           </div>
           <button
-            className="btn btn-primary mt-3"
+            className="btn-one tran3s mt-3"
             onClick={() => handleSave('Performance')}
             disabled={loading}
           >

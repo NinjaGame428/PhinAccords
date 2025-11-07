@@ -11,7 +11,7 @@ interface SongEditorProps {
 }
 
 const SongEditor: React.FC<SongEditorProps> = ({ song, onClose, onSave }) => {
-  const { success, error: notifyError } = useNotification()
+  const { error: notifyError } = useNotification()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
@@ -221,10 +221,10 @@ const SongEditor: React.FC<SongEditorProps> = ({ song, onClose, onSave }) => {
               </div>
             </div>
             <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" onClick={onClose}>
+              <button type="button" className="btn-six tran3s" onClick={onClose}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary" disabled={loading}>
+              <button type="submit" className="btn-one tran3s" disabled={loading}>
                 {loading ? 'Saving...' : song ? 'Update Song' : 'Add Song'}
               </button>
             </div>

@@ -115,7 +115,7 @@ const DownloadsClient: React.FC = () => {
           <i className="bi bi-download display-1 text-muted"></i>
           <h3 className="mt-3">No downloads yet</h3>
           <p className="text-muted">Start downloading resources to see them here</p>
-          <a href="/resources" className="btn btn-primary">
+          <a href="/resources" className="btn-one tran3s">
             Browse Resources
           </a>
         </div>

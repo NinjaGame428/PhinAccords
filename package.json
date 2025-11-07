@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:test": "tsx scripts/test-connection.ts",
+    "db:sync": "tsx scripts/sync-database.ts",
+    "db:seed-songs": "tsx scripts/seed-songs.ts",
+    "db:fix-chord-order": "tsx scripts/fix-chord-note-order.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.1",
@@ -29,7 +33,7 @@
     "react-redux": "^8.1.3",
     "react-responsive-masonry": "^2.1.7",
     "react-slick": "^0.29.0",
-    "react-toastify": "^9.1.3",
+    "react-toastify": "^11.0.5",
     "sass": "^1.68.0",
     "slick-carousel": "^1.8.1",
     "tone": "^15.1.22",
@@ -41,8 +45,10 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@types/react-slick": "^0.23.10",
+    "dotenv": "^17.2.3",
     "eslint": "latest",
     "eslint-config-next": "latest",
+    "tsx": "^4.20.6",
     "typescript": "latest"
   }
 }

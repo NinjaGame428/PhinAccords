@@ -1,0 +1,148 @@
+// Responsive Design Utilities
+
+// Mobile-first breakpoints
+$mobile: 640px;
+$tablet: 1024px;
+$desktop: 1024px;
+
+// Touch-friendly button sizes (minimum 44x44px for accessibility)
+.btn-touch {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.75rem 1rem;
+}
+
+// Responsive typography
+@media (max-width: $mobile - 1px) {
+  .responsive-text {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  h1.responsive {
+    font-size: 1.75rem;
+  }
+
+  h2.responsive {
+    font-size: 1.5rem;
+  }
+
+  h3.responsive {
+    font-size: 1.25rem;
+  }
+}
+
+@media (min-width: $mobile) and (max-width: $tablet - 1px) {
+  .responsive-text {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  h1.responsive {
+    font-size: 2rem;
+  }
+
+  h2.responsive {
+    font-size: 1.75rem;
+  }
+
+  h3.responsive {
+    font-size: 1.5rem;
+  }
+}
+
+@media (min-width: $tablet) {
+  .responsive-text {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  h1.responsive {
+    font-size: 2.5rem;
+  }
+
+  h2.responsive {
+    font-size: 2rem;
+  }
+
+  h3.responsive {
+    font-size: 1.75rem;
+  }
+}
+
+// Responsive grids
+.responsive-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: $mobile) {
+  .responsive-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: $tablet) {
+  .responsive-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .responsive-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+// Collapsible navigation
+@media (max-width: $tablet - 1px) {
+  .nav-collapsible {
+    display: none;
+    
+    &.show {
+      display: block;
+    }
+  }
+}
+
+// Adaptive spacing
+.responsive-padding {
+  padding: 1rem;
+}
+
+@media (min-width: $mobile) {
+  .responsive-padding {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: $tablet) {
+  .responsive-padding {
+    padding: 2rem;
+  }
+}
+
+// Focus visible for keyboard navigation
+*:focus-visible {
+  outline: 2px solid #0d6efd;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+// Skip to main content link (accessibility)
+.skip-to-main {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #000;
+  color: #fff;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 1000;
+
+  &:focus {
+    top: 0;
+  }
+}
+

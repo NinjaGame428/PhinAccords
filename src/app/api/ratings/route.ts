@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth-middleware'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await rateLimit({ maxRequests: 200, windowMs: 60 * 1000 })(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    }
+
     const supabase = createServerClient()
     const searchParams = request.nextUrl.searchParams
 
@@ -48,6 +56,19 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await rateLimit({ maxRequests: 50, windowMs: 60 * 1000 })(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    }
+
+    // Require authentication
+    const authResult = await requireAuth(request)
+    if (authResult.error) {
+      return authResult.error
+    }
+
+    const userId = authResult.user.id
     const supabase = createServerClient()
     const body = await request.json()
 
@@ -59,14 +80,6 @@ export async function POST(request: NextRequest) {
 
     if (!song_id && !resource_id) {
       return NextResponse.json({ error: 'song_id or resource_id is required' }, { status: 400 })
-    }
-
-    // TODO: Get user from session/auth
-    // For now, we'll need to pass user_id in the request or get it from auth
-    const userId = body.user_id // This should come from authenticated session
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User authentication required' }, { status: 401 })
     }
 
     const { data, error } = await supabase

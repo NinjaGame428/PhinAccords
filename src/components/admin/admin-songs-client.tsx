@@ -111,7 +111,7 @@ const AdminSongsClient: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button className="btn btn-primary" onClick={() => setShowEditor(true)}>
+          <button className="btn-one tran3s" onClick={() => setShowEditor(true)}>
             <i className="bi bi-plus-circle me-1"></i>
             Add Song
           </button>
@@ -159,13 +159,13 @@ const AdminSongsClient: React.FC = () => {
                     <td>
                       <div className="btn-group btn-group-sm">
                         <button
-                          className="btn btn-outline-primary"
+                          className="btn-six tran3s"
                           onClick={() => handleEdit(song)}
                         >
                           <i className="bi bi-pencil"></i>
                         </button>
                         <button
-                          className="btn btn-outline-danger"
+                          className="btn-six tran3s"
                           onClick={() => handleDelete(song)}
                         >
                           <i className="bi bi-trash"></i>

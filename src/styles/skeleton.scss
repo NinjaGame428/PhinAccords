@@ -1,0 +1,88 @@
+// Skeleton Loader Styles
+.skeleton-loader {
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  border-radius: 4px;
+}
+
+.dark .skeleton-loader {
+  background: linear-gradient(
+    90deg,
+    #2a2a2a 25%,
+    #3a3a3a 50%,
+    #2a2a2a 75%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.dark .skeleton-card {
+  border-color: #3a3a3a;
+}
+
+.skeleton-image {
+  width: 100%;
+  background-color: #f0f0f0;
+  border-radius: 0;
+}
+
+.dark .skeleton-image {
+  background-color: #2a2a2a;
+}
+
+.skeleton-content {
+  background-color: #fff;
+}
+
+.dark .skeleton-content {
+  background-color: #1a1a1a;
+}
+
+.skeleton-line {
+  height: 12px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.dark .skeleton-line {
+  background-color: #2a2a2a;
+}
+
+.skeleton-avatar {
+  border-radius: 50%;
+  background-color: #f0f0f0;
+}
+
+.dark .skeleton-avatar {
+  background-color: #2a2a2a;
+}
+
+.skeleton-list {
+  width: 100%;
+}
+
+.skeleton-text {
+  width: 100%;
+}
+

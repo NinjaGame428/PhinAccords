@@ -112,7 +112,7 @@ const AdminEmailsClient: React.FC = () => {
       <div className="card">
         <div className="card-header d-flex justify-content-between align-items-center">
           <h5 className="mb-0">Email Campaigns</h5>
-          <button className="btn btn-primary btn-sm">
+          <button className="btn-one tran3s">
             <i className="bi bi-plus-circle me-1"></i>
             New Campaign
           </button>

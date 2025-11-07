@@ -7,3 +7,18 @@
 @import '../../public/assets/fonts/magnita/magnita.css';
 @import '../../public/assets/fonts/bootstrap-icons/font.css';
 @import '../../public/assets/scss/style.scss';
+@import '../styles/skeleton.scss';
+@import '../styles/responsive.scss';
+@import '../styles/accessibility.scss';
+
+// Piano chord animations
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}

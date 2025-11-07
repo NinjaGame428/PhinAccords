@@ -1,0 +1,100 @@
+// Accessibility Styles
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .btn {
+    border-width: 2px;
+  }
+
+  .card {
+    border-width: 2px;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+// Screen reader only content
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.sr-only-focusable:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+// Focus indicators
+.focus-visible {
+  outline: 2px solid #0d6efd;
+  outline-offset: 2px;
+}
+
+// ARIA live regions
+[aria-live] {
+  position: relative;
+}
+
+[aria-live="polite"] {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+// Color contrast improvements
+.text-contrast {
+  color: #000;
+}
+
+.dark .text-contrast {
+  color: #fff;
+}
+
+.bg-contrast {
+  background-color: #fff;
+}
+
+.dark .bg-contrast {
+  background-color: #000;
+}
+
+// Keyboard navigation indicators
+.keyboard-nav *:focus {
+  outline: 2px solid #0d6efd;
+  outline-offset: 2px;
+}
+
+// Touch target sizes (minimum 44x44px)
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
