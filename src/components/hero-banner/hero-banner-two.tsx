@@ -6,7 +6,7 @@ import Link from "next/link";
 // internal
 import bg_1 from "@/assets/images/media/img_piano_woman.jpg";
 import bg_2 from "@/assets/images/media/img_02.jpg";
-import bg_3 from "@/assets/images/media/img_03.jpg";
+import bg_3 from "@/assets/images/media/img_woman_app_2.jpg";
 import icon from "@/assets/images/icon/icon_02.svg";
 
 // slider bg
