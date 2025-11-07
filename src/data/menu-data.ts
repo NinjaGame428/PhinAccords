@@ -28,11 +28,16 @@ const menu_data:IMenu[] = [
   },
   {
     id:6,
+    link:'/toolkit',
+    title:'Toolkit',
+  },
+  {
+    id:7,
     link:'/about',
     title:'About',
   },
   {
-    id:7,
+    id:8,
     link:'/contact',
     title:'Contact'
   }
