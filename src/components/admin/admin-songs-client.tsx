@@ -37,11 +37,11 @@ const AdminSongsClient: React.FC = () => {
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (song: Song) => {
     if (!confirm('Are you sure you want to delete this song?')) return
 
     try {
-      const response = await fetch(`/api/songs/${id}`, { method: 'DELETE' })
+      const response = await fetch(`/api/songs/${song.slug}`, { method: 'DELETE' })
       if (!response.ok) {
         const data = await response.json()
         throw new Error(data.error || 'Failed to delete song')
@@ -63,6 +63,29 @@ const AdminSongsClient: React.FC = () => {
     setShowEditor(false)
     setEditingSong(null)
     fetchSongs()
+  }
+
+  const handleEditorSave = async (songData: any) => {
+    try {
+      const url = editingSong ? `/api/songs/${editingSong.slug}` : '/api/songs'
+      const method = editingSong ? 'PATCH' : 'POST'
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(songData),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to save song')
+      }
+
+      success(editingSong ? 'Song updated successfully!' : 'Song added successfully!')
+      handleEditorClose()
+    } catch (err: any) {
+      notifyError(err.message)
+    }
   }
 
   if (loading) {
@@ -143,7 +166,7 @@ const AdminSongsClient: React.FC = () => {
                         </button>
                         <button
                           className="btn btn-outline-danger"
-                          onClick={() => handleDelete(song.id)}
+                          onClick={() => handleDelete(song)}
                         >
                           <i className="bi bi-trash"></i>
                         </button>
@@ -158,7 +181,7 @@ const AdminSongsClient: React.FC = () => {
       </div>
 
       {showEditor && (
-        <SongEditor song={editingSong} onClose={handleEditorClose} onSave={handleEditorClose} />
+        <SongEditor song={editingSong} onClose={handleEditorClose} onSave={handleEditorSave} />
       )}
     </div>
   )

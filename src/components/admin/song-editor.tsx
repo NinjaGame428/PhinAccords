@@ -7,7 +7,7 @@ import { useNotification } from '@/contexts/NotificationContext'
 interface SongEditorProps {
   song?: Song | null
   onClose: () => void
-  onSave: () => void
+  onSave: (songData?: any) => void
 }
 
 const SongEditor: React.FC<SongEditorProps> = ({ song, onClose, onSave }) => {
@@ -63,27 +63,12 @@ const SongEditor: React.FC<SongEditorProps> = ({ song, onClose, onSave }) => {
     setLoading(true)
 
     try {
-      const url = song ? `/api/songs/${song.id}` : '/api/songs'
-      const method = song ? 'PATCH' : 'POST'
-
       const payload = {
         ...formData,
         tags: formData.tags.split(',').map((t) => t.trim()).filter((t) => t),
       }
 
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to save song')
-      }
-
-      success(song ? 'Song updated successfully!' : 'Song added successfully!')
-      onSave()
+      onSave(payload)
     } catch (err: any) {
       notifyError(err.message)
     } finally {
