@@ -28,6 +28,9 @@ export interface User {
   join_date?: string;
 }
 
+export type SubscriptionTier = 'free' | 'basic' | 'premium' | 'premium_toolkit';
+export type SubscriptionStatus = 'active' | 'cancelled' | 'expired' | 'trial';
+
 export interface UserProfile {
   id: string;
   user_id: string;
@@ -37,5 +40,14 @@ export interface UserProfile {
   preferences?: Record<string, any>;
   created_at?: string;
   updated_at?: string;
+  // Subscription fields
+  subscription_tier?: SubscriptionTier;
+  subscription_status?: SubscriptionStatus;
+  subscription_start_date?: string;
+  subscription_end_date?: string;
+  billing_cycle?: 'monthly' | 'yearly';
+  auto_renew?: boolean;
+  cancel_at_period_end?: boolean;
+  is_first_year?: boolean;
 }
 

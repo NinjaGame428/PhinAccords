@@ -8,6 +8,10 @@ import { useFavorites } from '@/contexts/FavoritesContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import PremiumToolbar from '@/components/premium/toolbar'
+import { exportMIDIQuantized, exportMIDITimeAligned, downloadMIDI } from '@/lib/midi-export'
+import { exportPDF } from '@/lib/pdf-export'
+import type { ChordSegment, BeatPosition } from '@/lib/midi-export'
 
 interface SongDetailClientProps {
   song: Song
@@ -19,6 +23,15 @@ const SongDetailClient: React.FC<SongDetailClientProps> = ({ song }) => {
   const { success, error: notifyError } = useNotification()
   const { t } = useLanguage()
   const [currentKey, setCurrentKey] = useState(song.key_signature || 'C')
+  const [capo, setCapo] = useState(0)
+  const [tempo, setTempo] = useState(song.tempo ? parseInt(song.tempo.toString()) : 120)
+  const [isLooping, setIsLooping] = useState(false)
+  const [loopStart, setLoopStart] = useState(0)
+  const [loopEnd, setLoopEnd] = useState(0)
+  const [songVolume, setSongVolume] = useState(100)
+  const [chordsVolume, setChordsVolume] = useState(100)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
 
   const isFav = isFavorite(song.id)
 
@@ -53,9 +66,79 @@ const SongDetailClient: React.FC<SongDetailClientProps> = ({ song }) => {
     return keys[newIndex]
   }
 
-  const handleTranspose = (direction: 'up' | 'down') => {
-    const semitones = direction === 'up' ? 1 : -1
+  const handleTranspose = (semitones: number) => {
     setCurrentKey(transposeKey(currentKey, semitones))
+  }
+
+  const handleExportMIDI = async () => {
+    try {
+      // Parse chord progression if available
+      let chords: ChordSegment[] = []
+      let beats: BeatPosition[] = []
+
+      if (song.chord_progression) {
+        try {
+          const parsed = typeof song.chord_progression === 'string' 
+            ? JSON.parse(song.chord_progression)
+            : song.chord_progression
+          chords = parsed.chords || []
+          beats = parsed.beats || []
+        } catch {
+          // Fallback: create simple chord segments
+          chords = [{ startTime: 0, endTime: 4, chord: currentKey }]
+        }
+      }
+
+      const blob = await exportMIDIQuantized(chords, beats, {
+        tempo,
+        timeSignature: song.time_signature || '4/4',
+        quantized: true,
+        includeBass: true,
+      })
+
+      downloadMIDI(blob, `${song.title.replace(/[^a-z0-9]/gi, '_')}.mid`)
+      success('MIDI file downloaded successfully')
+    } catch (error: any) {
+      notifyError(error.message || 'Failed to export MIDI')
+    }
+  }
+
+  const handleExportPDF = async () => {
+    try {
+      let chords: ChordSegment[] = []
+
+      if (song.chord_progression) {
+        try {
+          const parsed = typeof song.chord_progression === 'string'
+            ? JSON.parse(song.chord_progression)
+            : song.chord_progression
+          chords = parsed.chords || []
+        } catch {
+          chords = [{ startTime: 0, endTime: 4, chord: currentKey }]
+        }
+      }
+
+      await exportPDF(chords, {
+        title: song.title,
+        artist: song.artist || song.artist_data?.name || 'Unknown',
+        key: currentKey,
+        tempo,
+        timeSignature: song.time_signature || '4/4',
+        includeChords: true,
+        includeLyrics: !!song.lyrics,
+        lyrics: song.lyrics || undefined,
+      })
+
+      success('PDF exported successfully')
+    } catch (error: any) {
+      notifyError(error.message || 'Failed to export PDF')
+    }
+  }
+
+  const handleCountOff = () => {
+    // Play count-off sound (1, 2, 3, 4)
+    // Implementation would use Tone.js or Web Audio API
+    success('Count-off: 1, 2, 3, 4')
   }
 
   return (
@@ -105,29 +188,37 @@ const SongDetailClient: React.FC<SongDetailClientProps> = ({ song }) => {
             )}
           </div>
 
-          {/* Transpose Controls */}
-          {song.key_signature && (
-            <div className="mb-3">
-              <label className="form-label">Transpose Key:</label>
-              <div className="btn-group" role="group">
-                <button
-                  className="btn btn-sm btn-outline-secondary"
-                  onClick={() => handleTranspose('down')}
-                >
-                  <i className="bi bi-arrow-down"></i>
-                </button>
-                <span className="btn btn-sm btn-outline-secondary disabled">
-                  {currentKey}
-                </span>
-                <button
-                  className="btn btn-sm btn-outline-secondary"
-                  onClick={() => handleTranspose('up')}
-                >
-                  <i className="bi bi-arrow-up"></i>
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Premium Toolbar */}
+          <PremiumToolbar
+            currentKey={currentKey}
+            onTranspose={handleTranspose}
+            onCapoChange={setCapo}
+            onTempoChange={setTempo}
+            onLoopToggle={() => setIsLooping(!isLooping)}
+            onLoopSet={(start, end) => {
+              setLoopStart(start)
+              setLoopEnd(end)
+            }}
+            onVolumeChange={(type, volume) => {
+              if (type === 'song') setSongVolume(volume)
+              else setChordsVolume(volume)
+            }}
+            onExportMIDI={handleExportMIDI}
+            onExportPDF={handleExportPDF}
+            onCountOff={handleCountOff}
+            songVolume={songVolume}
+            chordsVolume={chordsVolume}
+            tempo={tempo}
+            isLooping={isLooping}
+            loopStart={loopStart}
+            loopEnd={loopEnd}
+            capo={capo}
+            isPlaying={isPlaying}
+            onPlayPause={() => setIsPlaying(!isPlaying)}
+            onSeek={(seconds) => setCurrentTime(seconds)}
+            currentTime={currentTime}
+            duration={0} // Would be set from audio player
+          />
 
           {/* Stats */}
           <div className="d-flex gap-4 text-muted small">
