@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 interface Song {
   id: string
@@ -35,8 +35,6 @@ const DeChordClient = () => {
   const [error, setError] = useState<string | null>(null)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [youtubeUrl, setYoutubeUrl] = useState('')
-
-  const supabase = createClient()
 
   // Fetch songs from database
   useEffect(() => {
