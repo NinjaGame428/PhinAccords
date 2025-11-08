@@ -26,3 +26,6 @@ aiofiles>=23.2.1
 # Logging
 loguru>=0.7.2
 
+# YouTube support
+yt-dlp>=2024.1.0
+

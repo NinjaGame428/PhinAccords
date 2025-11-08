@@ -20,6 +20,8 @@ import madmom
 import librosa
 import numpy as np
 from loguru import logger
+import yt_dlp
+import subprocess
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -348,6 +350,121 @@ async def get_tempo(file: UploadFile = File(...)):
                 
     except Exception as e:
         logger.error(f"Error detecting tempo: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+def download_youtube_audio(url: str, output_path: str) -> tuple[str, str]:
+    """
+    Download audio from YouTube URL using yt-dlp
+    Returns (audio_file_path, video_title)
+    """
+    try:
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': output_path,
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+            'quiet': True,
+            'no_warnings': True,
+        }
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            title = info.get('title', 'Unknown')
+            # yt-dlp adds extension automatically
+            audio_path = output_path + '.mp3'
+            
+            return audio_path, title
+    except Exception as e:
+        logger.error(f"Error downloading YouTube audio: {e}")
+        raise HTTPException(status_code=500, detail=f"YouTube download failed: {str(e)}")
+
+@app.post("/analyze-youtube", response_model=AnalysisResult)
+async def analyze_youtube(
+    url: str = Form(...),
+    background_tasks: BackgroundTasks = None
+):
+    """
+    Analyze YouTube video for chords, key, and tempo
+    Downloads audio from YouTube URL and analyzes it
+    """
+    try:
+        # Validate YouTube URL
+        if 'youtube.com' not in url and 'youtu.be' not in url:
+            raise HTTPException(status_code=400, detail="Invalid YouTube URL")
+        
+        # Create temp file for download
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
+            tmp_path = tmp_file.name
+        
+        try:
+            # Download audio from YouTube
+            logger.info(f"Downloading audio from YouTube: {url}")
+            audio_path, video_title = download_youtube_audio(url, tmp_path)
+            
+            if not os.path.exists(audio_path):
+                raise HTTPException(status_code=500, detail="Failed to download audio")
+            
+            # Get audio duration
+            y, sr = librosa.load(audio_path)
+            duration = float(librosa.get_duration(y=y, sr=sr))
+            
+            # Process analysis
+            logger.info("Starting audio analysis...")
+            
+            # Recognize chords
+            chords_data = recognize_chords(audio_path)
+            
+            # Recognize key
+            key = recognize_key(audio_path)
+            
+            # Detect tempo
+            tempo = detect_tempo(audio_path)
+            
+            # Format chords
+            chord_segments = [
+                ChordSegment(
+                    startTime=float(start),
+                    endTime=float(end),
+                    chord=label
+                )
+                for start, end, label in chords_data
+            ]
+            
+            result = AnalysisResult(
+                chords=chord_segments,
+                key=key,
+                tempo=tempo,
+                duration=duration,
+                title=video_title
+            )
+            
+            logger.info(f"Analysis complete: {len(chord_segments)} chords, key={key}, tempo={tempo}")
+            
+            # Clean up temp files in background
+            if background_tasks:
+                background_tasks.add_task(os.unlink, audio_path)
+                background_tasks.add_task(os.unlink, tmp_path)
+            else:
+                if os.path.exists(audio_path):
+                    os.unlink(audio_path)
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+            
+            return result
+            
+        except Exception as e:
+            # Clean up on error
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+            if 'audio_path' in locals() and os.path.exists(audio_path):
+                os.unlink(audio_path)
+            raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+            
+    except Exception as e:
+        logger.error(f"Error processing YouTube request: {e}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.get("/health")

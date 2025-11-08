@@ -34,6 +34,7 @@ const DeChordClient = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [youtubeUrl, setYoutubeUrl] = useState('')
 
   const supabase = createClient()
 
@@ -75,6 +76,18 @@ const DeChordClient = () => {
     if (file) {
       setUploadedFile(file)
       setSelectedSong(null)
+      setYoutubeUrl('')
+      setAnalysisResult(null)
+      setError(null)
+    }
+  }
+
+  const handleYoutubeUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const url = event.target.value
+    setYoutubeUrl(url)
+    if (url) {
+      setSelectedSong(null)
+      setUploadedFile(null)
       setAnalysisResult(null)
       setError(null)
     }
@@ -88,39 +101,64 @@ const DeChordClient = () => {
     try {
       const DECHORD_SERVICE_URL = process.env.NEXT_PUBLIC_DECHORD_SERVICE_URL || 'http://localhost:8001'
 
-      let formData = new FormData()
-      let title = ''
+      if (youtubeUrl) {
+        // Analyze YouTube URL
+        const formData = new FormData()
+        formData.append('url', youtubeUrl)
 
-      if (uploadedFile) {
+        const response = await fetch(`${DECHORD_SERVICE_URL}/analyze-youtube`, {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
+          throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
+        }
+
+        const result: AnalysisResult = await response.json()
+        setAnalysisResult(result)
+      } else if (uploadedFile) {
         // Analyze uploaded file
+        const formData = new FormData()
         formData.append('file', uploadedFile)
-        title = uploadedFile.name.replace(/\.[^/.]+$/, '')
+        const title = uploadedFile.name.replace(/\.[^/.]+$/, '')
+        formData.append('title', title)
+
+        const response = await fetch(`${DECHORD_SERVICE_URL}/analyze`, {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
+          throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
+        }
+
+        const result: AnalysisResult = await response.json()
+        setAnalysisResult(result)
       } else if (selectedSong?.youtube_url) {
-        // For YouTube URLs, we need to download the audio first
-        // This would require backend processing
-        setError('YouTube URL analysis requires backend processing. Please upload an audio file instead.')
-        setIsAnalyzing(false)
-        return
+        // Analyze selected song's YouTube URL
+        const formData = new FormData()
+        formData.append('url', selectedSong.youtube_url)
+
+        const response = await fetch(`${DECHORD_SERVICE_URL}/analyze-youtube`, {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
+          throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
+        }
+
+        const result: AnalysisResult = await response.json()
+        setAnalysisResult(result)
       } else {
-        setError('Please select a song or upload an audio file')
+        setError('Please enter a YouTube URL, upload an audio file, or select a song with a YouTube URL')
         setIsAnalyzing(false)
         return
       }
-
-      formData.append('title', title || selectedSong?.title || 'Unknown')
-
-      const response = await fetch(`${DECHORD_SERVICE_URL}/analyze`, {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
-      }
-
-      const result: AnalysisResult = await response.json()
-      setAnalysisResult(result)
     } catch (err) {
       console.error('Analysis error:', err)
       setError(err instanceof Error ? err.message : 'Failed to analyze audio. Please try again.')
@@ -143,6 +181,31 @@ const DeChordClient = () => {
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body p-4">
               <h3 className="h4 mb-4">Select Song or Upload Audio</h3>
+
+              {/* YouTube URL Input */}
+              <div className="mb-4">
+                <label className="form-label fw-semibold">YouTube URL</label>
+                <input
+                  type="url"
+                  className="form-control"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  value={youtubeUrl}
+                  onChange={handleYoutubeUrlChange}
+                />
+                <small className="text-muted d-block mt-2">
+                  Paste a YouTube video URL to analyze
+                </small>
+                {youtubeUrl && (
+                  <div className="alert alert-info mt-3 mb-0">
+                    <i className="bi bi-youtube me-2"></i>
+                    YouTube URL entered
+                  </div>
+                )}
+              </div>
+
+              <div className="text-center my-4">
+                <span className="text-muted">OR</span>
+              </div>
 
               {/* File Upload */}
               <div className="mb-4">
@@ -221,7 +284,7 @@ const DeChordClient = () => {
               <button
                 className="btn btn-primary w-100 mt-4"
                 onClick={analyzeAudio}
-                disabled={isAnalyzing || (!selectedSong && !uploadedFile)}
+                disabled={isAnalyzing || (!selectedSong && !uploadedFile && !youtubeUrl)}
               >
                 {isAnalyzing ? (
                   <>

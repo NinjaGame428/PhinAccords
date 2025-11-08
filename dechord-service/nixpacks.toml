@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["python3", "ffmpeg-headless", "gcc"]
+nixPkgs = ["python3", "ffmpeg-headless", "ffmpeg", "gcc"]
 
 [phases.install]
 cmds = [
