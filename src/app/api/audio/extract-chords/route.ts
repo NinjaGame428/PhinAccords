@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { hasFeature } from '@/lib/subscription';
 
+// Note: Python service is optional. Can use DeChord service instead via /api/dechord/analyze
 const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
 
 export const config = {
