@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 
 interface Song {
   id: string
@@ -35,6 +35,7 @@ const DeChordClient = () => {
   const [error, setError] = useState<string | null>(null)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
 
+  const supabase = createClient()
 
   // Fetch songs from database
   useEffect(() => {
@@ -85,6 +86,8 @@ const DeChordClient = () => {
     setAnalysisResult(null)
 
     try {
+      const DECHORD_SERVICE_URL = process.env.NEXT_PUBLIC_DECHORD_SERVICE_URL || 'http://localhost:8001'
+
       let formData = new FormData()
       let title = ''
 
@@ -106,8 +109,7 @@ const DeChordClient = () => {
 
       formData.append('title', title || selectedSong?.title || 'Unknown')
 
-      // Use our API route which proxies to DeChord service
-      const response = await fetch('/api/dechord/analyze', {
+      const response = await fetch(`${DECHORD_SERVICE_URL}/analyze`, {
         method: 'POST',
         body: formData,
       })
