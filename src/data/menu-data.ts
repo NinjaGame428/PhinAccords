@@ -33,11 +33,16 @@ const menu_data:IMenu[] = [
   },
   {
     id:7,
+    link:'/dechord',
+    title:'Chord Analyzer',
+  },
+  {
+    id:8,
     link:'/about',
     title:'About',
   },
   {
-    id:8,
+    id:9,
     link:'/contact',
     title:'Contact'
   }
