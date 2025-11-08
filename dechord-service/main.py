@@ -352,7 +352,7 @@ async def get_tempo(file: UploadFile = File(...)):
         logger.error(f"Error detecting tempo: {e}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-def download_youtube_audio(url: str, output_path: str) -> tuple[str, str]:
+def download_youtube_audio(url: str, output_path: str) -> tuple:
     """
     Download audio from YouTube URL using yt-dlp
     Returns (audio_file_path, video_title)
