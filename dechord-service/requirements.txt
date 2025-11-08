@@ -1,0 +1,28 @@
+# DeChord Web Service - PhinAccords
+# Python dependencies for chord and key recognition
+
+# Build dependencies
+Cython>=3.0.0
+setuptools>=65.0.0
+wheel>=0.40.0
+
+# Core audio processing
+librosa>=0.10.1
+madmom>=0.16.1
+soundfile>=0.12.1
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Web framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.4.0
+aiofiles>=23.2.1
+
+# Logging
+loguru>=0.7.2
+
